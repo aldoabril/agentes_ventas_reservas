@@ -73,7 +73,7 @@ prompt = ChatPromptTemplate.from_messages([
 # partial permite prellenar ciertos valores en la plantilla del mensaje, pero no absolutamente todos.
 # En este caso, prellenamos 'format_instructions' con las instrucciones de formato obtenidas del parser.
 
-tools = [wiki_tool, save_tool, gets_time] # lista de herramientas que el agente puede usar
+tools = [save_tool, gets_time, get_disponibilidad_citas] # lista de herramientas que el agente puede usar
 agent = create_openai_tools_agent(
     llm=llm,
     prompt=prompt,
