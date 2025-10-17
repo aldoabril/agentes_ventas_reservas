@@ -24,7 +24,7 @@ from langchain.agents import create_tool_calling_agent # crea un agente que usa 
 from langchain.agents import create_openai_tools_agent # crea un agente de openai que puede usar herramientas
 from langchain.agents import AgentExecutor # Implementa el ejecutor para el agente definido
 
-from tools import wiki_tool, save_tool, gets_time # importamos la herramienta de busqueda en wikipedia definida en tools.py
+from tools import save_tool, gets_time, get_disponibilidad_citas # importamos las herramientas definidas en tools.py
 
 load_dotenv()
 

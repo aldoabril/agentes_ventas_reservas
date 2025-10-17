@@ -1,5 +1,4 @@
 langchain
-wikipedia
 langchain-openai
 langchain-community
 python-dotenv
