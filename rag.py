@@ -1,6 +1,6 @@
 import os
-import dotenv
-dotenv.load_dotenv()
+from dotenv import load_dotenv
+load_dotenv()
 
 if not os.environ.get("OPENAI_API_KEY"):
   os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
@@ -33,7 +33,7 @@ def load_pdfs_from_directory(directory_path):
             loader = PyPDFLoader(file_path)
             docs = loader.load()
             
-            text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+            text_splitter = vector_store(chunk_size=1000, chunk_overlap=200)
             splits = text_splitter.split_documents(docs)
             vector_store.add_documents(splits)
             print(f"Loaded and split {filename}")
@@ -50,5 +50,3 @@ if not os.path.exists(data_directory):
 load_pdfs_from_directory(data_directory)
 
 
-if not os.environ.get("LANGSMITH_API_KEY"):
-    os.environ["LANGSMITH_API_KEY"] = os.getenv("LANGSMITH_API_KEY")
