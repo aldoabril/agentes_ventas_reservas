@@ -5,77 +5,23 @@ dotenv.load_dotenv()
 if not os.environ.get("OPENAI_API_KEY"):
   os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 
-from langchain.chat_models import init_chat_model
+from langchain_openai import ChatOpenAI
 
-model = init_chat_model("gpt-4o-mini", model_provider="openai")
+model = ChatOpenAI(model="gpt-4o-mini")
 
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage, AIMessage, BaseMessage, SystemMessage
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.messages import SystemMessage, trim_messages
 
-from typing import Sequence
-
-from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
 from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph import START, MessagesState, StateGraph
+from langgraph.graph import START, StateGraph
+from typing import Sequence
 from typing_extensions import Annotated, TypedDict
 
 class State(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
     language: str
-# Define a new graph
-workflow = StateGraph(state_schema=State)
-
-
-from langchain_core.messages import SystemMessage, trim_messages
-
-trimmer = trim_messages(
-    max_tokens=65,
-    strategy="last",
-    token_counter=model,
-    include_system=True,
-    allow_partial=False,
-    start_on="human",
-)
-
-messages = [
-    SystemMessage(content="you're a good assistant"),
-    HumanMessage(content="hi! I'm bob"),
-    AIMessage(content="hi!"),
-    HumanMessage(content="I like vanilla ice cream"),
-    AIMessage(content="nice"),
-    HumanMessage(content="whats 2 + 2"),
-    AIMessage(content="4"),
-    HumanMessage(content="thanks"),
-    AIMessage(content="no problem!"),
-    HumanMessage(content="having fun?"),
-    AIMessage(content="yes!"),
-]
-
-def call_model(state: State):
-    print(f"Messages before trimming: {len(state['messages'])}")
-    trimmed_messages = trimmer.invoke(state["messages"])
-    print(f"Messages after trimming: {len(trimmed_messages)}")
-    print("Remaining messages:")
-    for msg in trimmed_messages:
-        print(f"  {type(msg).__name__}: {msg.content}")
-    prompt = prompt_template.invoke(
-        {"messages": trimmed_messages, "language": state["language"]}
-    )
-    response = model.invoke(prompt)
-    return {"messages": [response]}
-
-
-# Define the (single) node in the graph
-workflow.add_edge(START, "model")
-workflow.add_node("model", call_model)
-
-# Add memory
-memory = MemorySaver()
-app = workflow.compile(checkpointer=memory)
-
-config = {"configurable": {"thread_id": "abc123"}}
-
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 prompt_template = ChatPromptTemplate.from_messages(
     [
@@ -87,24 +33,47 @@ prompt_template = ChatPromptTemplate.from_messages(
     ]
 )
 
-input_messages = [
-        HumanMessage(content="Hi! I'm Bob"),
-        #AIMessage(content="Hello Bob! How can I assist you today?"),
-        #HumanMessage(content="What's my name?"),
-    ]
-#output = app.invoke({"messages": messages, "language": "Spanish"} , config)
-#respones = output["messages"][-1].pretty_print()  # output contains all messages in state
+trimmer = trim_messages(
+    max_tokens=65,
+    strategy="last",
+    token_counter=model,
+    include_system=True,
+    allow_partial=False,
+start_on="human",
+)
 
 
-config = {"configurable": {"thread_id": "abc789"}}
-query = "Hi I'm Todd, please tell me a joke."
-language = "English"
+def call_model(state: State):
+    trimmed_messages = trimmer.invoke(state["messages"])
+    prompt = prompt_template.invoke(
+        {"messages": trimmed_messages, "language": state["language"]}
+    )
+    response = model.invoke(prompt)
+    return {"messages": [response]}
 
-input_messages = [HumanMessage(query)]
-for chunk, metadata in app.stream(
-    {"messages": input_messages, "language": language},
-    config,
-    stream_mode="messages",
-):
-    if isinstance(chunk, AIMessage):  # Filter to just model responses
-        print(chunk.content, end="|")
+# Define a new graph
+workflow = StateGraph(state_schema=State)
+
+# Define the (single) node in the graph
+workflow.add_node("model", call_model)
+workflow.add_edge(START, "model")
+
+
+# Add memory
+memory = MemorySaver()
+app = workflow.compile(checkpointer=memory)
+
+config = {"configurable": {"thread_id": "abc1234"}}
+
+print("Bienvenido a su consultorio  🤖\n ¿Cómo podemos ayudarle? (Presione X para Salir)")
+
+while(1):
+    user_input = input("👨 PetLover: ")
+    if user_input.lower() == "x":
+        break
+    else:
+        input_messages = [HumanMessage(content=user_input)]
+        language = "Spanish"
+        response = app.invoke({"messages": input_messages, "language": language}, config)
+        response_content = response['messages'][-1].content
+        print("🐶🤖 VeterinarIA:", response_content)
