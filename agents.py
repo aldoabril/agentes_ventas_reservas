@@ -5,6 +5,9 @@ from pydantic import BaseModel, Field
 from langchain_core.messages import BaseMessage, AIMessage
 from langgraph.graph.message import add_messages
 
+# Importamos la cadena RAG desde el archivo retriever.py
+from retriever import chain as rag_chain
+
 # --- 1. Definición del Estado del Grafo (AgentState) ---
 # El estado es un diccionario que se pasa entre los nodos del grafo.
 # Contiene toda la información relevante de la conversación.
@@ -66,11 +69,16 @@ Tu tarea es analizar el mensaje del usuario y clasificarlo en una de las siguien
 
 def knowledge_concierge_node(state: AgentState) -> AgentState:
     """
-    Nodo de Conocimiento: Responde a consultas generales.
-    Respuesta dummy.
+    Nodo de Conocimiento: Responde a consultas generales utilizando RAG.
     """
     print("--- Ejecutando Knowledge Concierge ---")
-    response = "Hola, soy el Knowledge Concierge. Nuestros precios son competitivos. ¿En qué más puedo ayudarte?"
+    
+    # Extraer la última pregunta del usuario del estado
+    user_question = state["messages"][-1].content
+    
+    # Invocar la cadena RAG con la pregunta del usuario
+    response = rag_chain.invoke(user_question)
+    
     # Devolvemos la respuesta como un mensaje de IA para añadirlo al historial
     return {"messages": [AIMessage(content=response)]}
 
