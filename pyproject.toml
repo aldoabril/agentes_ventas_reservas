@@ -23,7 +23,8 @@ dependencies = [
     "numpy",
     "openai",
     "tiktoken",
-    "pypdf"
+    "pypdf",
+    "langchain-google-genai>=0.1.0"
 ]
 
 
