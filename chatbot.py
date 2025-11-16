@@ -2,12 +2,18 @@ import os
 import dotenv
 dotenv.load_dotenv()
 
-if not os.environ.get("OPENAI_API_KEY"):
-  os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+llm_provider = os.environ.get("LLM_PROVIDER", "gemini")
 
-from langchain_openai import ChatOpenAI
-
-model = ChatOpenAI(model="gpt-4o-mini")
+if llm_provider == "gemini":
+    if not os.environ.get("GOOGLE_API_KEY"):
+        os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    model = ChatGoogleGenerativeAI(model="gemini-pro")
+else:
+    if not os.environ.get("OPENAI_API_KEY"):
+        os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+    from langchain_openai import ChatOpenAI
+    model = ChatOpenAI(model="gpt-4o-mini")
 
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
