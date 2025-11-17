@@ -1,95 +1,80 @@
 # mcp_client.py
 
 import asyncio
-from fastmcp import MCPClient
+from fastmcp import Client
 import json
+import sys
 
-# Define la dirección del servidor MCP.
-# Asegúrate de que coincida con la configuración de tu mcp_server.py.
-SERVER_HOST = "localhost"
-SERVER_PORT = 8765
 
 async def main():
     """
-    Cliente de ejemplo para interactuar con AgentToolsMCPServer.
+    Cliente de ejemplo para interactuar con AgentToolsMCPServer a través de stdio.
     """
-    # 1. Crear una instancia del cliente MCP
-    client = MCPClient(server_host=SERVER_HOST, server_port=SERVER_PORT)
+    # 1. Usar el cliente MCP para iniciar el servidor como un subproceso
+    print("Iniciando servidor MCP como subproceso...")
+    # El comando para iniciar el servidor. sys.executable asegura que se use el mismo intérprete de Python.
+    server_command = [sys.executable, "mcp_server.py"]
 
-    try:
-        # 2. Conectar al servidor
-        await client.connect()
-        print(f"Conectado al servidor MCP en {SERVER_HOST}:{SERVER_PORT}")
+    async with Client(command=server_command) as client:
+        print("Conectado al servidor MCP a través de stdio.")
 
-        # 3. Listar las herramientas disponibles en el servidor
+        # 2. Listar las herramientas disponibles en el servidor
         print("\n--- Herramientas Disponibles ---")
-        tools = await client.list_tools()
-        for tool in tools:
-            print(f"- {tool.name}: {tool.description}")
-            print(f"  Argumentos: {json.dumps(tool.arguments, indent=4)}")
-        print("---------------------------------")
+        try:
+            tools = await client.list_tools()
+            if not tools:
+                print("No se encontraron herramientas disponibles en el servidor.")
+            else:
+                for tool in tools:
+                    print(f"- {tool.name}: {tool.description}")
+                    # Imprimir argumentos de una manera más limpia si es posible
+                    try:
+                        args_json = json.dumps(tool.arguments, indent=4, ensure_ascii=False)
+                        print(f"  Argumentos: {args_json}")
+                    except TypeError:
+                        print(f"  Argumentos: {tool.arguments}")
+            print("---------------------------------")
 
-        # 4. Ejemplo de llamada a una herramienta: get_availability
-        print("\n--- Llamando a 'get_availability' ---")
-        tool_name = "get_availability"
-        arguments = {
-            "empresa_id": "CLARUSDENT",
-            "especialista_id": "DOC001",
-            "fecha": "2024-08-15",
-            "paciente_id": "PAC007"
-        }
-        print(f"Llamando a '{tool_name}' con los argumentos: {arguments}")
-        
-        result = await client.call_tool(tool_name, arguments)
-        
-        print("\nRespuesta del servidor:")
-        if result.stderr:
-            print(f"Error: {result.stderr}")
-        else:
-            # El stdout es un string JSON, lo parseamos para una mejor visualización
-            try:
-                data = json.loads(result.stdout)
-                print(json.dumps(data, indent=2, ensure_ascii=False))
-            except json.JSONDecodeError:
-                print(result.stdout)
-        print("---------------------------------")
+            # 3. Ejemplo de llamada a una herramienta: get_availability
+            print("\n--- Llamando a 'get_availability' ---")
+            tool_name = "get_availability"
+            arguments = {
+                "empresa_id": "CLARUSDENT",
+                "especialista_id": "DOC001",
+                "fecha": "2024-08-15",
+                "paciente_id": "PAC007"
+            }
+            print(f"Llamando a '{tool_name}' con los argumentos: {arguments}")
 
-        # 5. Ejemplo de llamada a otra herramienta: find_appointments_by_patient
-        print("\n--- Llamando a 'find_appointments_by_patient' ---")
-        tool_name_2 = "find_appointments_by_patient"
-        arguments_2 = {
-            "patient_id": "PAC007"
-        }
-        print(f"Llamando a '{tool_name_2}' con los argumentos: {arguments_2}")
+            result = await client.call_tool(tool_name, arguments)
 
-        result_2 = await client.call_tool(tool_name_2, arguments_2)
+            print("\nRespuesta del servidor:")
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+            print("---------------------------------")
 
-        print("\nRespuesta del servidor:")
-        if result_2.stderr:
-            print(f"Error: {result_2.stderr}")
-        else:
-            try:
-                data_2 = json.loads(result_2.stdout)
-                print(json.dumps(data_2, indent=2, ensure_ascii=False))
-            except json.JSONDecodeError:
-                print(result_2.stdout)
-        print("---------------------------------")
+            # 4. Ejemplo de llamada a otra herramienta: find_appointments_by_patient
+            print("\n--- Llamando a 'find_appointments_by_patient' ---")
+            tool_name_2 = "find_appointments_by_patient"
+            arguments_2 = {
+                "patient_id": "PAC007"
+            }
+            print(f"Llamando a '{tool_name_2}' con los argumentos: {arguments_2}")
 
-    except ConnectionRefusedError:
-        print(f"Error: No se pudo conectar al servidor en {SERVER_HOST}:{SERVER_PORT}.")
-        print("Asegúrate de que 'mcp_server.py' se esté ejecutando.")
-    except Exception as e:
-        print(f"Ocurrió un error inesperado: {e}")
-    finally:
-        # 6. Desconectar del servidor
-        if client.is_connected():
-            await client.cleanup()
-            print("\nDesconectado del servidor MCP.")
+            result_2 = await client.call_tool(tool_name_2, arguments_2)
+
+            print("\nRespuesta del servidor:")
+            print(json.dumps(result_2, indent=2, ensure_ascii=False))
+            print("---------------------------------")
+
+        except Exception as e:
+            print(f"\nOcurrió un error durante la comunicación con el servidor: {e}")
+            print("Asegúrate de que 'mcp_server.py' es ejecutable y no tiene errores.")
+
+        finally:
+            print("\nCliente finalizado. El servidor subproceso se detendrá automáticamente.")
+
 
 if __name__ == "__main__":
-    # Ejecutar el cliente
-    # Nota: Si estás en un entorno como Jupyter, puede que necesites
-    # configurar el bucle de eventos de asyncio de forma diferente.
     try:
         asyncio.run(main())
     except KeyboardInterrupt:

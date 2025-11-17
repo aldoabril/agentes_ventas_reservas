@@ -1,117 +1,83 @@
 # mcp_server.py
-
-from typing import Any, Dict, List
-from fastmcp import MCPServer, MCPTool, CallToolResult
 import asyncio
-import requests
-
-# 1. Importa las funciones cliente que acabamos de crear
+from fastmcp import FastMCP
 import api_clients
+from typing import Dict, Any, Optional
 
-# 2. Mapea los nombres de las herramientas a las funciones reales
-AVAILABLE_TOOLS = {
-    "get_availability": api_clients.get_availability,
-    "save_appointment": api_clients.save_appointment,
-    "update_appointment": api_clients.update_appointment,
-    "delete_appointment": api_clients.delete_appointment,
-    "find_appointments_by_patient": api_clients.find_appointments_by_patient,
-    "get_specialist_schedule_config": api_clients.get_specialist_schedule_config,
-}
+# 1. Crea una instancia de FastMCP
+# El 'name' es importante para la identificación del servidor.
+mcp = FastMCP(
+    name="CitasMedicasServer",
+    instructions="Provee herramientas para consultar disponibilidad, agendar, modificar y cancelar citas médicas.",
+)
 
-class AgentToolsMCPServer(MCPServer):
+# 2. Define las herramientas usando el decorador @mcp.tool()
+# Las descripciones (docstrings) son cruciales para que el LLM sepa cómo usar la herramienta.
+
+@mcp.tool()
+def get_availability(
+    empresa_id: str,
+    especialista_id: str,
+    fecha: str,
+    paciente_id: Optional[str] = None,
+) -> Dict[str, Any]:
     """
-    Un servidor MCP que expone las herramientas de gestión de citas médicas.
+    Consulta y devuelve los horarios disponibles para un especialista en una fecha específica.
+    Útil para saber qué horas se pueden agendar.
     """
-    def name(self) -> str:
-        return "CitasMedicasServer"
+    return api_clients.get_availability(empresa_id, especialista_id, fecha, paciente_id)
 
-    async def list_tools(self) -> List[MCPTool]:
-        """
-        Describe las herramientas disponibles. La calidad de estas descripciones
-        es CRUCIAL para que el agente decida correctamente.
-        """
-        tools = [
-            MCPTool(
-                name="get_availability",
-                description="Consulta y devuelve los horarios disponibles para un especialista en una fecha específica. Útil para saber qué horas se pueden agendar.",
-                arguments={
-                    "empresa_id": "ID de la empresa o clínica.",
-                    "especialista_id": "ID del especialista para el cual se consulta la disponibilidad.",
-                    "fecha": "La fecha para la consulta en formato YYYY-MM-DD.",
-                    "paciente_id": "(Opcional) ID del paciente, si es relevante para la disponibilidad."
-                },
-            ),
-            MCPTool(
-                name="save_appointment",
-                description="Crea y agenda una nueva cita médica en el sistema. Se debe usar después de confirmar la disponibilidad y tener todos los datos del paciente.",
-                arguments={
-                    "appointment_data": "Un diccionario JSON con los detalles completos de la cita (ej: pacienteId, especialistaId, fecha, hora, motivo, etc.)."
-                },
-            ),
-            MCPTool(
-                name="update_appointment",
-                description="Modifica una cita médica ya existente. Sirve para reprogramar o cambiar detalles de una cita.",
-                arguments={
-                    "appointment_id": "El ID de la cita que se desea modificar.",
-                    "appointment_data": "Un diccionario JSON con los campos a actualizar."
-                },
-            ),
-            MCPTool(
-                name="delete_appointment",
-                description="Elimina o cancela una cita médica existente del sistema usando su ID.",
-                arguments={
-                    "appointment_id": "El ID de la cita que se desea eliminar."
-                },
-            ),
-            MCPTool(
-                name="find_appointments_by_patient",
-                description="Busca y devuelve una lista de todas las citas agendadas para un paciente específico. Se puede filtrar por fecha.",
-                arguments={
-                    "patient_id": "El ID del paciente cuyas citas se quieren encontrar.",
-                    "fecha": "(Opcional) La fecha específica para filtrar las citas en formato YYYY-MM-DD."
-                },
-            ),
-            MCPTool(
-                name="get_specialist_schedule_config",
-                description="Obtiene la configuración general del horario de un especialista (días que trabaja, horas de inicio y fin). No devuelve la disponibilidad de un día, sino el horario base.",
-                arguments={
-                    "specialist_id": "El ID del especialista cuyo horario base se quiere consultar."
-                },
-            ),
-        ]
-        return tools
+@mcp.tool()
+def save_appointment(appointment_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Crea y agenda una nueva cita médica en el sistema.
+    Se debe usar después de confirmar la disponibilidad y tener todos los datos del paciente.
+    """
+    return api_clients.save_appointment(appointment_data)
 
-    async def call_tool(self, tool_name: str, arguments: Dict[str, Any] | None) -> CallToolResult:
-        """
-        Ejecuta la herramienta solicitada por el agente, delegando a la función cliente correspondiente.
-        """
-        if tool_name not in AVAILABLE_TOOLS:
-            return CallToolResult(stdout=f"Error: Herramienta '{tool_name}' no encontrada.", stderr="Herramienta desconocida.")
+@mcp.tool()
+def update_appointment(
+    appointment_id: str, appointment_data: Dict[str, Any]
+) -> Dict[str, Any]:
+    """
+    Modifica una cita médica ya existente. Sirve para reprogramar o cambiar detalles de una cita.
+    """
+    return api_clients.update_appointment(appointment_id, appointment_data)
 
-        try:
-            tool_function = AVAILABLE_TOOLS[tool_name]
-            
-            # Las funciones de `requests` no son asíncronas, por lo que no necesitamos `await`
-            result = tool_function(**(arguments or {}))
+@mcp.tool()
+def delete_appointment(appointment_id: str) -> Dict[str, Any]:
+    """
+    Elimina o cancela una cita médica existente del sistema usando su ID.
+    """
+    return api_clients.delete_appointment(appointment_id)
 
-            # Convertimos el resultado (que debería ser un dict o list) a un string para el stdout
-            import json
-            return CallToolResult(stdout=json.dumps(result, indent=2, ensure_ascii=False))
+@mcp.tool()
+def find_appointments_by_patient(
+    patient_id: str,
+    fecha: Optional[str] = None,
+) -> list[Dict[str, Any]]:
+    """
+    Busca y devuelve una lista de todas las citas agendadas para un paciente específico.
+    Se puede filtrar por fecha.
+    """
+    return api_clients.find_appointments_by_patient(patient_id, fecha)
 
-        except requests.exceptions.HTTPError as e:
-            # Captura errores específicos de HTTP para dar una mejor respuesta
-            error_body = e.response.text
-            return CallToolResult(
-                stdout=f"Error de API al ejecutar '{tool_name}': {e.response.status_code} {e.response.reason}. Detalles: {error_body}",
-                stderr=str(e)
-            )
-        except Exception as e:
-            return CallToolResult(
-                stdout=f"Error inesperado al ejecutar la herramienta '{tool_name}': {e}",
-                stderr=str(e)
-            )
+@mcp.tool()
+def get_specialist_schedule_config(specialist_id: str) -> Dict[str, Any]:
+    """
+    Obtiene la configuración general del horario de un especialista (días que trabaja, horas de inicio y fin).
+    No devuelve la disponibilidad de un día, sino el horario base.
+    """
+    return api_clients.get_specialist_schedule_config(specialist_id)
 
-    # Métodos requeridos por la clase base abstracta
-    async def connect(self): pass
-    async def cleanup(self): pass
 
+# --- Bloque para ejecutar el servidor ---
+if __name__ == "__main__":
+    try:
+        # El servidor ahora se ejecutará sobre stdin/stdout, por lo que no se necesita host/puerto.
+        # Asumimos que mcp.run es una corutina y necesita ser ejecutada en un bucle de eventos.
+        asyncio.run(mcp.run(transport="stdio"))
+    except KeyboardInterrupt:
+        print("\nServidor detenido.", file=sys.stderr)
+    except Exception as e:
+        print(f"Error al iniciar el servidor: {e}", file=sys.stderr)
