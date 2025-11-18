@@ -2,6 +2,7 @@
 
 import asyncio
 from fastmcp import Client
+from fastmcp.client.transports import PythonStdioTransport
 import json
 import sys
 
@@ -13,10 +14,12 @@ async def main():
     # 1. Usar el cliente MCP para iniciar el servidor como un subproceso
     print("Iniciando servidor MCP como subproceso...")
     # El comando para iniciar el servidor. sys.executable asegura que se use el mismo intérprete de Python.
-    server_command = [sys.executable, "mcp_server.py"]
+    transport = PythonStdioTransport("mcp_server.py")
 
-    async with Client(command=server_command) as client:
+    async with Client(transport) as client:
         print("Conectado al servidor MCP a través de stdio.")
+        await client.ping()
+        print("Ping exitoso al servidor MCP.")
 
         # 2. Listar las herramientas disponibles en el servidor
         print("\n--- Herramientas Disponibles ---")
@@ -29,10 +32,10 @@ async def main():
                     print(f"- {tool.name}: {tool.description}")
                     # Imprimir argumentos de una manera más limpia si es posible
                     try:
-                        args_json = json.dumps(tool.arguments, indent=4, ensure_ascii=False)
+                        args_json = json.dumps(tool.inputSchema, indent=4, ensure_ascii=False)
                         print(f"  Argumentos: {args_json}")
                     except TypeError:
-                        print(f"  Argumentos: {tool.arguments}")
+                        print(f"  Argumentos: {tool.inputSchema}")
             print("---------------------------------")
 
             # 3. Ejemplo de llamada a una herramienta: get_availability
@@ -74,8 +77,10 @@ async def main():
             print("\nCliente finalizado. El servidor subproceso se detendrá automáticamente.")
 
 
+
 if __name__ == "__main__":
     try:
         asyncio.run(main())
+        print("Cliente finalizado.")
     except KeyboardInterrupt:
         print("\nCliente detenido por el usuario.")

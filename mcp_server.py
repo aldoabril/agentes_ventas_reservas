@@ -1,5 +1,6 @@
 # mcp_server.py
 import asyncio
+import sys
 from fastmcp import FastMCP
 import api_clients
 from typing import Dict, Any, Optional
@@ -76,7 +77,9 @@ if __name__ == "__main__":
     try:
         # El servidor ahora se ejecutará sobre stdin/stdout, por lo que no se necesita host/puerto.
         # Asumimos que mcp.run es una corutina y necesita ser ejecutada en un bucle de eventos.
-        asyncio.run(mcp.run(transport="stdio"))
+        # asyncio.run(mcp.run(transport="stdio"))
+        mcp.run()
+        print("Servidor finalizado.")
     except KeyboardInterrupt:
         print("\nServidor detenido.", file=sys.stderr)
     except Exception as e:
