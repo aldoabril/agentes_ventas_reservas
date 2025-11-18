@@ -2,25 +2,20 @@
 
 import asyncio
 from fastmcp import Client
-from fastmcp.client.transports import PythonStdioTransport
 import json
 import sys
 
 
+
+
 async def main():
     """
-    Cliente de ejemplo para interactuar con AgentToolsMCPServer a través de stdio.
+    Cliente de ejemplo para interactuar con AgentToolsMCPServer a través de HTTP.
     """
-    # 1. Usar el cliente MCP para iniciar el servidor como un subproceso
-    print("Iniciando servidor MCP como subproceso...")
-    # El comando para iniciar el servidor. sys.executable asegura que se use el mismo intérprete de Python.
-    transport = PythonStdioTransport("mcp_server.py")
-
-    async with Client(transport) as client:
-        print("Conectado al servidor MCP a través de stdio.")
-        await client.ping()
-        print("Ping exitoso al servidor MCP.")
-
+    # 1. Configurar el cliente para conectarse al servidor MCP
+    print("Conectando al servidor MCP en http://localhost:8000/mcp...")
+    
+    async with Client("http://localhost:8000/mcp") as client:
         # 2. Listar las herramientas disponibles en el servidor
         print("\n--- Herramientas Disponibles ---")
         try:
@@ -29,52 +24,57 @@ async def main():
                 print("No se encontraron herramientas disponibles en el servidor.")
             else:
                 for tool in tools:
-                    print(f"- {tool.name}: {tool.description}")
+                    #print(f"- {tool.name}: {tool.description}")
                     # Imprimir argumentos de una manera más limpia si es posible
                     try:
                         args_json = json.dumps(tool.inputSchema, indent=4, ensure_ascii=False)
-                        print(f"  Argumentos: {args_json}")
+                        #print(f"  Argumentos: {args_json}")
                     except TypeError:
                         print(f"  Argumentos: {tool.inputSchema}")
-            print("---------------------------------")
+            #print("---------------------------------")
 
             # 3. Ejemplo de llamada a una herramienta: get_availability
-            print("\n--- Llamando a 'get_availability' ---")
+            #print("\n--- Llamando a 'get_availability' ---")
             tool_name = "get_availability"
             arguments = {
-                "empresa_id": "CLARUSDENT",
-                "especialista_id": "DOC001",
-                "fecha": "2024-08-15",
-                "paciente_id": "PAC007"
+                "empresa_id": "A0OZsgiMQQVtwxMhN6Um",
+                "especialista_id": "GMcKghlgHvTkoPxj9t4X",
+                "fecha": "2025-11-18"
             }
             print(f"Llamando a '{tool_name}' con los argumentos: {arguments}")
 
             result = await client.call_tool(tool_name, arguments)
 
             print("\nRespuesta del servidor:")
-            print(json.dumps(result, indent=2, ensure_ascii=False))
+            # MCP CallToolResult has fields: content (list), structuredContent (optional), isError
+            # Prefer structuredContent when available, otherwise fall back to content.
+            try:
+                if getattr(result, "structuredContent", None) is not None:
+                    print(json.dumps(result.structuredContent, indent=2, ensure_ascii=False))
+                else:
+                    # content may be a list of ContentBlock models or plain dicts
+                    content = getattr(result, "content", None)
+                    if content is None:
+                        print(json.dumps({"isError": getattr(result, "isError", False)}, ensure_ascii=False))
+                    else:
+                        # Convert any pydantic models to dicts for JSON serialization
+                        serializable = []
+                        for c in content:
+                            try:
+                                serializable.append(c.model_dump() if hasattr(c, "model_dump") else (c.dict() if hasattr(c, "dict") else c))
+                            except Exception:
+                                serializable.append(c)
+                        print(json.dumps(serializable, indent=2, ensure_ascii=False))
+            except Exception as e:
+                print(f"Error al procesar la respuesta del servidor: {e}")
+            print("---------------------------------")
             print("---------------------------------")
 
-            # 4. Ejemplo de llamada a otra herramienta: find_appointments_by_patient
-            print("\n--- Llamando a 'find_appointments_by_patient' ---")
-            tool_name_2 = "find_appointments_by_patient"
-            arguments_2 = {
-                "patient_id": "PAC007"
-            }
-            print(f"Llamando a '{tool_name_2}' con los argumentos: {arguments_2}")
-
-            result_2 = await client.call_tool(tool_name_2, arguments_2)
-
-            print("\nRespuesta del servidor:")
-            print(json.dumps(result_2, indent=2, ensure_ascii=False))
-            print("---------------------------------")
+            
 
         except Exception as e:
             print(f"\nOcurrió un error durante la comunicación con el servidor: {e}")
-            print("Asegúrate de que 'mcp_server.py' es ejecutable y no tiene errores.")
-
-        finally:
-            print("\nCliente finalizado. El servidor subproceso se detendrá automáticamente.")
+            print("Asegúrate de que 'mcp_server.py' está corriendo en http://localhost:8000")
 
 
 

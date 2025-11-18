@@ -9,7 +9,7 @@ from typing import Dict, Any, Optional
 # El 'name' es importante para la identificación del servidor.
 mcp = FastMCP(
     name="CitasMedicasServer",
-    instructions="Provee herramientas para consultar disponibilidad, agendar, modificar y cancelar citas médicas.",
+    instructions="Provee herramientas para consultar disponibilidad, agendar, modificar y cancelar citas médicas."
 )
 
 # 2. Define las herramientas usando el decorador @mcp.tool()
@@ -78,7 +78,7 @@ if __name__ == "__main__":
         # El servidor ahora se ejecutará sobre stdin/stdout, por lo que no se necesita host/puerto.
         # Asumimos que mcp.run es una corutina y necesita ser ejecutada en un bucle de eventos.
         # asyncio.run(mcp.run(transport="stdio"))
-        mcp.run()
+        mcp.run(transport="http", port=8000)
         print("Servidor finalizado.")
     except KeyboardInterrupt:
         print("\nServidor detenido.", file=sys.stderr)

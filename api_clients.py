@@ -6,17 +6,23 @@ from typing import Dict, Any, Optional, List
 # --- Configuración de la API ---
 # Modifica esta URL para que apunte a la dirección base de tu API de citas.
 # La he deducido del código del router de Express que proporcionaste.
-API_BASE_URL = "http://localhost:3000/api/appointments"
+API_BASE_URL = "https://us-central1-odontoplus-4db47.cloudfunctions.net/api/v1/citas"
 
 def get_availability(
     empresa_id: str,
     especialista_id: str,
     fecha: str,
     paciente_id: Optional[str] = None,
+    auth_token: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Llama a la API para obtener la disponibilidad de un especialista.
     Corresponde a: GET /
+    La llamada CURL sería algo así:
+    curl -X GET "https://us-central1-odontoplus-4db47.cloudfunctions.net/api/v1/citas?empresaId=hIntsAEzBwy8Hwi4DNcf&especialistaId=EjEoM4k4RpkJWf585ZSc&fecha=2025-11-18" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFakVvTTRrNFJwa0pXZjU4NVpTcSIsImVtcHJlc2EiOiJoSW50c0FFekJ3eThId2k0RE5jZiIsImlhdCI6MTcyODA1Mzk5M30.HCoHtyuJYtKcNv0imD2nCAmxxoB89PL1g7UIC6MYmAo"
+     
     """
     params = {
         "empresaId": empresa_id,
@@ -26,7 +32,12 @@ def get_availability(
     if paciente_id:
         params["pacienteId"] = paciente_id
 
-    response = requests.get(API_BASE_URL, params=params)
+    headers = {"Content-Type": "application/json"}
+    if auth_token:
+        headers["Authorization"] = f"Bearer {auth_token}"
+
+    response = requests.get(API_BASE_URL, params=params, headers=headers)
+    print("GET Availability URL:", response)
     response.raise_for_status()  # Lanza una excepción para errores HTTP (4xx o 5xx)
     return response.json()
 
