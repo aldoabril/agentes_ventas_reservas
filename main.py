@@ -48,8 +48,8 @@ workflow.add_conditional_edges(
         "Scheduler": "Scheduler",
         "Negotiator": "Negotiator",
         "Guardian": "Guardian",
-        # Si el router decidiera finalizar, podríamos añadir:
-        # "end": END
+        # Si el router decidiera finalizar, añadimos la transición a END
+        "end": END
     }
 )
 
