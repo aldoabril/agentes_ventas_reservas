@@ -12,14 +12,12 @@ from fastmcp import Client
 # Importamos la cadena RAG desde el archivo retriever.py
 from retriever import chain as rag_chain
 
-EMPRESA_ID = "hIntsAEzBwy8Hwi4DNcf"
+EMPRESA_ID = "A0OZsgiMQQVtwxMhN6Um"
+PACIENTE_ID = "OcUAJ7TQGxPOsndeg30j"
 
 # --- 1. Definición del Estado del Grafo (AgentState) ---
-
 # El estado es un diccionario que se pasa entre los nodos del grafo.
-
 # Contiene toda la información relevante de la conversación.
-
 
 
 class AgentState(TypedDict):
@@ -33,6 +31,8 @@ class AgentState(TypedDict):
         especialista_id: ID del especialista (opcional).
         fecha: Fecha deseada para la cita (opcional).
         horarios_disponibles: Lista de horarios disponibles (opcional).
+        hora_seleccionada: Hora seleccionada para la cita (opcional).
+        booking_complete: Flag para indicar si el proceso de reserva ha finalizado.
     """
 
 
@@ -45,6 +45,7 @@ class AgentState(TypedDict):
     fecha: Optional[str]
     horarios_disponibles: Optional[list]
     hora_seleccionada: Optional[str]
+    booking_complete: Optional[bool]
     
 
 
@@ -53,50 +54,24 @@ class AgentState(TypedDict):
 async def call_mcp_tool(tool_name: str, arguments: Dict[str, Any]) -> Any:
 
     """Función auxiliar para conectarse al servidor MCP y llamar a una herramienta."""
-
     print(f"--- Llamando a la herramienta MCP: {tool_name} con args: {arguments} ---")
-
     # Filtramos los argumentos que son None para no enviarlos
-
     arguments = {k: v for k, v in arguments.items() if v is not None}
-
     try:
-
         async with Client("http://localhost:8000/mcp") as client:
-
             result = await client.call_tool(tool_name, arguments)
-
-            
-
             if getattr(result, "isError", False):
-
                 print(f"Error en la herramienta MCP '{tool_name}': {result.content}")
-
                 return {"error": result.content}
 
-
-
             content = getattr(result, "structuredContent", None) or getattr(result, "content", None)
-
-            
-
             if content is None:
-
                 return {"status": "éxito", "respuesta": "La operación se completó sin un contenido de respuesta específico."}
-
-            
-
             # Si el contenido es una lista de modelos Pydantic, los convertimos a dict
-
             if isinstance(content, list):
-
                 return [item.model_dump() if hasattr(item, "model_dump") else item for item in content]
 
-            
-
             return content
-
-
 
     except Exception as e:
         print(f"Error de conexión o ejecución en MCP: {e}")
@@ -136,6 +111,47 @@ def get_availability(
     """
     return asyncio.run(call_mcp_tool("get_availability", locals()))
 
+@tool
+def create_appointment(
+    paciente_nombre: str,
+    especialista_id: str,
+    fecha: str,  # YYYY-MM-DD
+    hora: str,   # HH:MM
+    paciente_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Crea y agenda una nueva cita médica en el sistema.
+    
+    Args:
+        paciente_nombre: Nombre completo del paciente
+        especialista_id: ID del especialista seleccionado
+        fecha: Fecha de la cita en formato YYYY-MM-DD
+        hora: Hora de la cita en formato HH:MM (24h)
+        paciente_id: ID del paciente si ya existe en el sistema (opcional)
+    
+    Ejemplo:
+        create_appointment(
+            paciente_nombre="Juan Pérez",
+            especialista_id="GMcKghlgHvTkoPxj9t4X",
+            fecha="2026-01-15",
+            hora="10:30"
+        )
+    """
+    # Importar la función helper desde api_clients
+    from api_clients import build_appointment_data
+    
+    # Construir la estructura de la cita
+    appointment_data = build_appointment_data(
+        empresa_id=EMPRESA_ID,  # Usar el ID global definido en agents.py
+        especialista_id=especialista_id,
+        paciente_nombre=paciente_nombre,
+        paciente_id=paciente_id,
+        fecha=fecha,
+        hora=hora,
+    )
+    
+    # Llamar al MCP tool para guardar
+    return asyncio.run(call_mcp_tool("save_appointment", {"appointment_data": appointment_data}))
 
 
 
@@ -147,6 +163,7 @@ scheduler_tools = [
     get_availability,
     get_lista_especialistas,
     get_especialista_nombre,
+    create_appointment,
 ]
 
 
@@ -221,6 +238,7 @@ def scheduler_node(state: AgentState) -> AgentState:
     SCHEDULER_SYSTEM_PROMPT = f"""
 Eres un asistente de agendamiento de citas para un consultorio dental. Tu objetivo es guiar al usuario paso a paso para agendar una cita. Eres amable, eficiente y muy estructurado.
 El ID de la empresa es: {EMPRESA_ID}. USA ESTE ID SIEMPRE QUE SE REQUIERA 'empresa_id'. NO LO PREGUNTES.
+El ID del paciente es: {PACIENTE_ID}. USA ESTE ID SIEMPRE QUE SE REQUIERA 'paciente_id'. NO LO PREGUNTES.
 
 El proceso de agendamiento tiene los siguientes pasos:
 1.  **Obtener Datos Iniciales**: Necesitas la siguiente información del usuario. Ve pidiéndola una por una si no la tienes:
@@ -229,7 +247,12 @@ El proceso de agendamiento tiene los siguientes pasos:
     - Solicita la fecha deseada (`fecha`) en formato YYYY-MM-DD.
 2.  **Verificar Disponibilidad**: Una vez que tengas `especialista_id` y `fecha`, DEBES usar la herramienta `get_availability` para consultar los horarios libres. (Usa el empresa_id proporcionado arriba).
 3.  **Presentar Opciones y Esperar Selección**: Muestra al usuario los horarios disponibles de forma clara y espera a que elija uno.
-4.  **Finalizar**: Informa al usuario que la cita ha sido agendada exitosamente, proporcionando todos los detalles de la cita guardada.
+4.  **Confirmar y Guardar**: Cuando el usuario elija una hora, confirma todos los detalles (paciente, especialista, fecha y hora). Luego, usa la herramienta `create_appointment` con los siguientes parámetros:
+    - paciente_nombre: Nombre completo del paciente
+    - especialista_id: ID del especialista seleccionado
+    - fecha: Fecha en formato YYYY-MM-DD
+    - hora: Hora seleccionada en formato HH:MM (24 horas, ej: "14:30")
+5.  **Finalizar**: Informa al usuario que la cita ha sido agendada exitosamente, proporcionando todos los detalles de la cita guardada.
 
 **Formato de Presentación (MUY IMPORTANTE):**
 - Las herramientas devuelven datos en JSON. TÚ DEBES convertirlos a texto natural y amigable.
@@ -246,7 +269,8 @@ El proceso de agendamiento tiene los siguientes pasos:
 """
 
     # 1. Configurar el LLM con las herramientas y el nuevo prompt
-    llm = ChatOpenAI(model="gpt-4o", temperature=0)
+    # Usamos gpt-4o-mini para reducir costos y límites de tokens
+    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
     llm_with_tools = llm.bind_tools(scheduler_tools)
 
     # Creamos el prompt que incluye el system prompt y el historial de mensajes
@@ -257,8 +281,12 @@ El proceso de agendamiento tiene los siguientes pasos:
 
     chain = prompt | llm_with_tools
 
-    # 2. Invocar el modelo con el historial de mensajes actual
-    response_ai_message = chain.invoke({"messages": state["messages"]})
+    # 2. Limitar el historial de mensajes para evitar exceder límites de tokens
+    # Mantenemos solo los últimos 10 mensajes para contexto
+    recent_messages = state["messages"][-10:] if len(state["messages"]) > 10 else state["messages"]
+    
+    # 2. Invocar el modelo con el historial de mensajes limitado
+    response_ai_message = chain.invoke({"messages": recent_messages})
 
     # 3. Si el LLM no necesita usar una herramienta, simplemente devuelve su respuesta.
     if not response_ai_message.tool_calls:
@@ -270,16 +298,22 @@ El proceso de agendamiento tiene los siguientes pasos:
     for tool_call in response_ai_message.tool_calls:
         selected_tool = {t.name: t for t in scheduler_tools}[tool_call["name"]]
         tool_output = selected_tool.invoke(tool_call["args"])
+        
+        # Truncar salidas muy largas para evitar exceder límites de tokens
+        tool_output_str = str(tool_output)
+        if len(tool_output_str) > 500:
+            tool_output_str = tool_output_str[:500] + "... (truncado)"
+        
         tool_messages.append(
             ToolMessage(
-                content=str(tool_output),
+                content=tool_output_str,
                 tool_call_id=tool_call["id"],
             )
         )
 
     # 5. Después de ejecutar las herramientas, invocamos al LLM nuevamente
     # para que procese los resultados y genere una respuesta amigable
-    messages_with_tool_results = state["messages"] + [response_ai_message] + tool_messages
+    messages_with_tool_results = recent_messages + [response_ai_message] + tool_messages
     final_response = chain.invoke({"messages": messages_with_tool_results})
     
     # Devolvemos todos los mensajes: la llamada a la herramienta, los resultados, y la respuesta final

@@ -2,11 +2,107 @@
 
 import requests
 from typing import Dict, Any, Optional, List
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 # --- Configuración de la API ---
 # Modifica esta URL para que apunte a la dirección base de tu API de citas.
 # La he deducido del código del router de Express que proporcionaste.
 API_BASE_URL = "https://us-central1-odontoplus-4db47.cloudfunctions.net/api/v1/citas"
+
+# Zona horaria de la clínica (equivalente a clinicTz en TypeScript)
+CLINIC_TIMEZONE = "America/Lima"
+
+
+def build_appointment_data(
+    empresa_id: str,
+    especialista_id: str,
+    paciente_nombre: str,
+    paciente_id: Optional[str],
+    fecha: str,  # YYYY-MM-DD
+    hora: str,   # HH:MM formato 24h
+    duracion_minutos: int = 60,
+    summary: str = "Cita Dental",
+    description: str = "Consulta general",
+) -> Dict[str, Any]:
+    """
+    Construye la estructura de datos de una cita siguiendo el formato esperado por la API.
+    
+    Adaptado del código TypeScript mapperEventData().
+    
+    Args:
+        empresa_id: ID de la empresa/clínica
+        especialista_id: ID del especialista
+        paciente_nombre: Nombre completo del paciente
+        paciente_id: ID del paciente (opcional si es nuevo)
+        fecha: Fecha en formato YYYY-MM-DD
+        hora: Hora en formato HH:MM (24h)
+        duracion_minutos: Duración de la cita en minutos (default: 60)
+        summary: Título de la cita
+        description: Descripción de la cita
+    
+    Returns:
+        Dict con la estructura completa de la cita
+    """
+    # Construir datetime local de la clínica
+    datetime_str = f"{fecha}T{hora}:00"
+    clinic_tz = ZoneInfo(CLINIC_TIMEZONE)
+    
+    # Crear momento de inicio en zona horaria de la clínica
+    start_local = datetime.fromisoformat(datetime_str).replace(tzinfo=clinic_tz)
+    
+    # Calcular momento de fin
+    end_local = start_local + timedelta(minutes=duracion_minutos)
+    
+    # Convertir a UTC para enviar al backend
+    start_utc = start_local.astimezone(ZoneInfo("UTC"))
+    end_utc = end_local.astimezone(ZoneInfo("UTC"))
+    
+    # Construir estructura de la cita
+    appointment_data = {
+        "empresaId": empresa_id,
+        "summary": summary,
+        "description": description,
+        
+        # Fechas en UTC (como en TypeScript)
+        "start": {
+            "dateTime": start_utc.isoformat(),
+            "timeZone": "UTC",
+        },
+        "end": {
+            "dateTime": end_utc.isoformat(),
+            "timeZone": "UTC",
+        },
+        
+        # Asistentes
+        "attendees": [
+            {
+                "email": f"paciente@temp.com",  # Placeholder, ajustar según necesidad
+                "displayName": paciente_nombre,
+            }
+        ],
+        
+        # Metadatos
+        "create_at": datetime.now(ZoneInfo("UTC")).isoformat(),
+        "patientId": paciente_id,
+        "especialistaId": especialista_id,
+        "available": False,
+        
+        # Propiedades extendidas (para Google Calendar)
+        "extendedProperties": {
+            "private": {
+                "businessId": empresa_id,
+                "specialistId": especialista_id,
+            }
+        },
+        
+        # Opcional: representaciones locales para logging/debugging
+        "startLocal": start_local.isoformat(),
+        "endLocal": end_local.isoformat(),
+    }
+    
+    return appointment_data
+
 
 def get_availability(
     empresa_id: str,
