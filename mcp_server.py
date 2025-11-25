@@ -12,8 +12,12 @@ mcp = FastMCP(
     instructions="Provee herramientas para consultar disponibilidad, agendar, modificar y cancelar citas médicas."
 )
 
+especialistas = {
+    "GMcKghlgHvTkoPxj9t4X": "Dr. Juan Pérez",
+    "oxFsA3phVDEVuw3jCQFx": "Dr. María López"
+}
 @mcp.tool()
-def get_empresaId(
+def get_empresa_id(
 ) -> str:
     """
     Obtiene el ID de la empresa.
@@ -27,11 +31,17 @@ def get_lista_especialistas(
     """
     Obtiene la lista de especialistas.
     """
-    return {"GMcKghlgHvTkoPxj9t4X": "Dr. Juan Pérez", "oxFsA3phVDEVuw3jCQFx": "Dr. María López"}
+    return especialistas
 
+@mcp.tool()
+def get_especialista_nombre(
+    especialista_id: str,
+) -> str:
+    """
+    Obtiene el nombre de un especialista por su ID.
+    """
+    return especialistas.get(especialista_id, "Especialista no encontrado")
 
-# 2. Define las herramientas usando el decorador @mcp.tool()
-# Las descripciones (docstrings) son cruciales para que el LLM sepa cómo usar la herramienta.
 
 @mcp.tool()
 def get_availability(
