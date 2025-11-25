@@ -23,122 +23,37 @@ from retriever import chain as rag_chain
 
 
 class AgentState(TypedDict):
-
-
-
     """
-
-
-
     Representa el estado de la conversación, incluyendo los datos para agendar una cita.
-
-
-
-
-
-
-
     Attributes:
-
-
-
         messages: La secuencia de mensajes.
-
-
-
         intention: La intención clasificada del usuario.
-
-
-
         next_node: El siguiente nodo a ejecutar.
-
-
-
         next_step_prompt: Instrucción para el siguiente paso que el agente debe solicitar.
-
-
-
         empresa_id: ID de la empresa (opcional).
-
-
-
         paciente_nombre: Nombre del paciente (opcional).
-
-
-
         especialista_id: ID del especialista (opcional).
-
-
-
         fecha: Fecha deseada para la cita (opcional).
-
-
-
         horarios_disponibles: Lista de horarios disponibles (opcional).
-
-
-
         hora_seleccionada: La hora que el usuario ha elegido (opcional).
-
-
-
         booking_complete: Flag para indicar si el proceso de reserva ha finalizado.
-
-
-
     """
-
 
 
     messages: Annotated[Sequence[BaseMessage], add_messages]
-
-
-
     intention: str
-
-
-
     next_node: str
-
-
-
     next_step_prompt: Optional[str]  # <-- Añadido
-
-
-
     empresa_id: Optional[str]
-
-
-
     paciente_nombre: Optional[str]
-
-
-
     especialista_id: Optional[str]
-
-
-
     fecha: Optional[str]
-
-
-
     horarios_disponibles: Optional[list]
-
-
-
     hora_seleccionada: Optional[str]
-
-
-
     booking_complete: bool
 
 
-
-
-
 # --- 2. Definición de Herramientas para el Scheduler ---
-
-
 
 async def call_mcp_tool(tool_name: str, arguments: Dict[str, Any]) -> Any:
 
@@ -357,89 +272,49 @@ def lead_qualifier_node(state: AgentState) -> AgentState:
     # Prompt para clasificar la intención
 
     qualifier_prompt = ChatPromptTemplate.from_messages([
-
         ("system", """Eres un clasificador de intenciones para un asistente de consultorio dental.
-
 Tu tarea es analizar el mensaje del usuario y clasificarlo en una de las siguientes categorías:
-
 - consulta: El usuario pide información (precios, horarios, servicios).
-
 - reserva: El usuario quiere agendar una nueva cita.
-
 - reprogramacion: El usuario quiere cambiar una cita existente.
-
 - cancelacion: El usuario quiere cancelar una cita.
-
 - objecion: El usuario presenta una queja o duda sobre el precio o servicio.
-
 - invalido: El mensaje es spam, no se entiende o no está relacionado con el consultorio."""),
-
         ("human", "Analiza el siguiente mensaje del usuario: '{message}'"),
-
     ])
-
-
 
     chain = qualifier_prompt | structured_llm
 
     # Analizamos el último mensaje del usuario
 
     result = chain.invoke({"message": state["messages"][-1].content})
-
-
-
     state['intention'] = result.intention
-
     print(f"Intención detectada: {state['intention']}")
-
     return state
 
 
 
 def knowledge_concierge_node(state: AgentState) -> AgentState:
-
     """
-
     Nodo de Conocimiento: Responde a consultas generales utilizando RAG.
-
     """
-
     print("--- Ejecutando Knowledge Concierge ---")
-
-    
-
     # Extraer la última pregunta del usuario del estado
-
     user_question = state["messages"][-1].content
-
-    
-
     # Invocar la cadena RAG con la pregunta del usuario
-
     response = rag_chain.invoke(user_question)
-
-    
-
     # Devolvemos la respuesta como un mensaje de IA para añadirlo al historial
-
     return {"messages": [AIMessage(content=response)]}
 
 
 
 def negotiator_node(state: AgentState) -> AgentState:
-
     """
-
     Nodo Negociador: Maneja objeciones.
-
     Respuesta dummy.
-
     """
-
     print("--- Ejecutando Negotiator & Objection Handler ---")
-
     response = "Entiendo tu objeción. Déjame ver qué alternativa puedo ofrecerte."
-
     return {"messages": [AIMessage(content=response)]}
 
 
@@ -455,9 +330,9 @@ def scheduler_node(state: AgentState) -> AgentState:
 Eres un asistente de agendamiento de citas para un consultorio dental. Tu objetivo es guiar al usuario paso a paso para agendar una cita. Eres amable, eficiente y muy estructurado.
 El proceso de agendamiento tiene los siguientes pasos:
 1.  **Obtener Datos Iniciales**: Necesitas la siguiente información del usuario. Ve pidiéndola una por una si no la tienes:
-    - ID de la empresa (`empresa_id`)
+    - Consulta con que especialista desea agendar la cita.
+    - Obten el ID de la empresa de las herramientas disponibles.
     - Nombre completo del paciente (`paciente_nombre`)
-    - ID del especialista (`especialista_id`)
     - Fecha deseada (`fecha`) en formato YYYY-MM-DD.
 2.  **Verificar Disponibilidad**: Una vez que tengas `empresa_id`, `especialista_id` y `fecha`, DEBES usar la herramienta `get_availability` para consultar los horarios libres.
 3.  **Presentar Opciones y Esperar Selección**: Muestra al usuario los horarios disponibles de forma clara y espera a que elija uno.
@@ -510,39 +385,24 @@ El proceso de agendamiento tiene los siguientes pasos:
 
 
 def guardian_node(state: AgentState) -> AgentState:
-
     """
-
     Nodo Guardián: Valida acciones críticas.
-
     Respuesta dummy.
-
     """
-
     print("--- Ejecutando Guardian Agent ---")
-
     # En un caso real, este nodo no necesariamente respondería al usuario.
-
     # Podría modificar el estado o enrutar a otro nodo.
-
     # Por ahora, simulamos que no hace nada visible para el usuario.
-
     print("Acción validada internamente.")
-
     return {}
 
 
 
 # --- 4. Lógica y Prompt del Router (Orchestrator) ---
 
-
-
 class RouteQuery(BaseModel):
-
     """Define el esquema para la decisión de enrutamiento."""
-
     next_node: Literal["Knowledge Concierge", "Scheduler", "Negotiator", "Guardian", "end"] = Field(
-
         description="El nodo al que se debe dirigir la conversación a continuación."
 
     )
@@ -550,33 +410,12 @@ class RouteQuery(BaseModel):
 
 
 def router_node(state: AgentState) -> dict:
-
-
-
     """
-
-
-
     Nodo Router: Decide el siguiente paso basado en la intención.
-
-
-
     """
-
-
-
     print("--- Ejecutando Orchestrator (Router) ---")
 
-
-
-
-
-
-
     # Configuración del LLM para tomar la decisión de enrutamiento
-
-
-
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
 

@@ -12,6 +12,24 @@ mcp = FastMCP(
     instructions="Provee herramientas para consultar disponibilidad, agendar, modificar y cancelar citas médicas."
 )
 
+@mcp.tool()
+def get_empresaId(
+) -> str:
+    """
+    Obtiene el ID de la empresa.
+    """
+    return "hIntsAEzBwy8Hwi4DNcf"
+
+
+@mcp.tool()
+def get_lista_especialistas(
+) -> Dict[str, str]:
+    """
+    Obtiene la lista de especialistas.
+    """
+    return {"GMcKghlgHvTkoPxj9t4X": "Dr. Juan Pérez", "oxFsA3phVDEVuw3jCQFx": "Dr. María López"}
+
+
 # 2. Define las herramientas usando el decorador @mcp.tool()
 # Las descripciones (docstrings) son cruciales para que el LLM sepa cómo usar la herramienta.
 
