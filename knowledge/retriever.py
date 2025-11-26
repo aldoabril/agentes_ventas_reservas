@@ -14,6 +14,10 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
 
+# Get the absolute path to the project root
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CHROMA_DB_PATH = os.path.join(PROJECT_ROOT, "data", "chroma_langchain_db")
+
 # Initialize embeddings
 embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
 
@@ -21,7 +25,7 @@ embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
 vector_store = Chroma(
     collection_name="example_collection",
     embedding_function=embeddings,
-    persist_directory="./chroma_langchain_db",
+    persist_directory=CHROMA_DB_PATH,
 )
 
 
@@ -47,5 +51,5 @@ chain = (
     | StrOutputParser()
 )
 
-# Example usage:
-print(chain.invoke("Dame información de Clarus Dent"))
+# Example usage (commented out to avoid execution on import):
+# print(chain.invoke("Dame información de Clarus Dent"))

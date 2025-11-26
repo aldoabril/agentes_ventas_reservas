@@ -1,63 +1,24 @@
+"""
+Aplicación principal del sistema de agentes de ventas y reservas.
+"""
 import os
 from dotenv import load_dotenv
-from langgraph.graph import StateGraph, END
-
-from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.messages import HumanMessage
-from agents import (
-    AgentState,
-    knowledge_concierge_node,
-    scheduler_node,
-    router_node
-)
+from workflows.conversation_graph import create_app
 
-# --- 1. Definición del Grafo de Agentes ---
-
-# Crear una instancia del grafo de estado
-workflow = StateGraph(AgentState)
-
-# Añadir los nodos al grafo. Cada nodo es una función que hemos definido en agents.py
-workflow.add_node("Orchestrator", router_node)
-workflow.add_node("Knowledge Concierge", knowledge_concierge_node)
-workflow.add_node("Scheduler", scheduler_node)
-
-# --- 2. Definición de las Transiciones (Edges) ---
-
-# Establecer el punto de entrada del grafo
-workflow.set_entry_point("Orchestrator")
-
-
-# Definir la lógica de enrutamiento condicional desde el Orchestrator
-def decide_next_node(state: AgentState):
-    """Función que lee el estado y decide el siguiente paso."""
-    return state["next_node"]
-
-workflow.add_conditional_edges(
-    "Orchestrator",
-    decide_next_node,
-    {
-        "Knowledge Concierge": "Knowledge Concierge",
-        "Scheduler": "Scheduler",
-        "end": END
-    }
-)
-
-workflow.add_edge("Knowledge Concierge", END)
-workflow.add_edge("Scheduler", END)
-
-# --- 3. Compilación y Ejecución Conversacional ---
+# Cargar variables de entorno
+load_dotenv()
 
 if __name__ == "__main__":
-    load_dotenv()
-
-    memory = MemorySaver()
-
-    app = workflow.compile(checkpointer=memory)
-
+    # Crear la aplicación del grafo
+    app = create_app()
+    
+    # Configuración de threading para memoria conversacional
     thread_id = "mi-conversacion-1"
     config = {"configurable": {"thread_id": thread_id}}
-
+    
     print("🤖 Hola, soy tu asistente. Escribe 'salir' para terminar.")
+    
     while True:
         user_input = input("🙂 Tú: ")
         if user_input.lower() in ["salir", "exit"]:

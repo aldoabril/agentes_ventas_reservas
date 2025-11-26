@@ -1,0 +1,32 @@
+"""Paquete de configuración del sistema."""
+from .settings import (
+    EMPRESA_ID,
+    PACIENTE_ID,
+    API_BASE_URL,
+    CLINIC_TIMEZONE,
+    MCP_SERVER_URL,
+    MCP_SERVER_PORT,
+    LLM_PROVIDER,
+    DEFAULT_MODEL,
+    EMBEDDING_MODEL,
+    VECTOR_STORE_COLLECTION,
+    VECTOR_STORE_PATH,
+    DOCUMENTS_PATH,
+    ESPECIALISTAS,
+)
+
+__all__ = [
+    "EMPRESA_ID",
+    "PACIENTE_ID",
+    "API_BASE_URL",
+    "CLINIC_TIMEZONE",
+    "MCP_SERVER_URL",
+    "MCP_SERVER_PORT",
+    "LLM_PROVIDER",
+    "DEFAULT_MODEL",
+    "EMBEDDING_MODEL",
+    "VECTOR_STORE_COLLECTION",
+    "VECTOR_STORE_PATH",
+    "DOCUMENTS_PATH",
+    "ESPECIALISTAS",
+]

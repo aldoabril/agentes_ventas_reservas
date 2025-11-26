@@ -2,7 +2,7 @@
 import asyncio
 import sys
 from fastmcp import FastMCP
-import api_clients
+from integrations import calendar_api
 from typing import Dict, Any, Optional
 
 # 1. Crea una instancia de FastMCP
@@ -54,7 +54,7 @@ def get_availability(
     Consulta y devuelve los horarios disponibles para un especialista en una fecha específica.
     Útil para saber qué horas se pueden agendar.
     """
-    return api_clients.get_availability(empresa_id, especialista_id, fecha, paciente_id)
+    return calendar_api.get_availability(empresa_id, especialista_id, fecha, paciente_id)
 
 @mcp.tool()
 def save_appointment(appointment_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -62,7 +62,7 @@ def save_appointment(appointment_data: Dict[str, Any]) -> Dict[str, Any]:
     Crea y agenda una nueva cita médica en el sistema.
     Se debe usar después de confirmar la disponibilidad y tener todos los datos del paciente.
     """
-    return api_clients.save_appointment(appointment_data)
+    return calendar_api.save_appointment(appointment_data)
 
 @mcp.tool()
 def update_appointment(
@@ -71,14 +71,14 @@ def update_appointment(
     """
     Modifica una cita médica ya existente. Sirve para reprogramar o cambiar detalles de una cita.
     """
-    return api_clients.update_appointment(appointment_id, appointment_data)
+    return calendar_api.update_appointment(appointment_id, appointment_data)
 
 @mcp.tool()
 def delete_appointment(appointment_id: str) -> Dict[str, Any]:
     """
     Elimina o cancela una cita médica existente del sistema usando su ID.
     """
-    return api_clients.delete_appointment(appointment_id)
+    return calendar_api.delete_appointment(appointment_id)
 
 @mcp.tool()
 def find_appointments_by_patient(
@@ -89,7 +89,7 @@ def find_appointments_by_patient(
     Busca y devuelve una lista de todas las citas agendadas para un paciente específico.
     Se puede filtrar por fecha.
     """
-    return api_clients.find_appointments_by_patient(patient_id, fecha)
+    return calendar_api.find_appointments_by_patient(patient_id, fecha)
 
 @mcp.tool()
 def get_specialist_schedule_config(specialist_id: str) -> Dict[str, Any]:
@@ -97,7 +97,7 @@ def get_specialist_schedule_config(specialist_id: str) -> Dict[str, Any]:
     Obtiene la configuración general del horario de un especialista (días que trabaja, horas de inicio y fin).
     No devuelve la disponibilidad de un día, sino el horario base.
     """
-    return api_clients.get_specialist_schedule_config(specialist_id)
+    return calendar_api.get_specialist_schedule_config(specialist_id)
 
 
 # --- Bloque para ejecutar el servidor ---

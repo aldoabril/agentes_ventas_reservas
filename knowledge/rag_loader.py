@@ -10,6 +10,11 @@ from langchain_chroma import Chroma
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+# Get the absolute path to the project root
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CHROMA_DB_PATH = os.path.join(PROJECT_ROOT, "data", "chroma_langchain_db")
+DOCUMENTS_PATH = os.path.join(os.path.dirname(__file__), "documents")
+
 # Initialize embeddings
 embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
 
@@ -17,7 +22,7 @@ embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
 vector_store = Chroma(
     collection_name="example_collection",
     embedding_function=embeddings,
-    persist_directory="./chroma_langchain_db",
+    persist_directory=CHROMA_DB_PATH,
 )
 
 def load_pdfs_from_directory(directory_path):
@@ -33,7 +38,7 @@ def load_pdfs_from_directory(directory_path):
             loader = PyPDFLoader(file_path)
             docs = loader.load()
             
-            text_splitter = vector_store(chunk_size=1000, chunk_overlap=200)
+            text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
             splits = text_splitter.split_documents(docs)
             vector_store.add_documents(splits)
             print(f"Loaded and split {filename}")
@@ -41,12 +46,11 @@ def load_pdfs_from_directory(directory_path):
             print(f"Failed to process {filename}: {e}")
 
 # Example usage:
-# Create a directory named 'data' and place your PDF files inside it.
-data_directory = "./data" 
-if not os.path.exists(data_directory):
-    os.makedirs(data_directory)
-    print(f"Created directory: {data_directory}. Please add your PDF files here.")
+# The documents directory is in the same folder as this file
+if not os.path.exists(DOCUMENTS_PATH):
+    os.makedirs(DOCUMENTS_PATH)
+    print(f"Created directory: {DOCUMENTS_PATH}. Please add your PDF files here.")
 
-load_pdfs_from_directory(data_directory)
+load_pdfs_from_directory(DOCUMENTS_PATH)
 
 
