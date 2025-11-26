@@ -42,7 +42,6 @@ def get_especialista_nombre(
     """
     return especialistas.get(especialista_id, "Especialista no encontrado")
 
-
 @mcp.tool()
 def get_availability(
     empresa_id: str,
