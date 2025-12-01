@@ -20,16 +20,16 @@ def build_appointment_data(
     paciente_nombre: str,
     paciente_id: Optional[str],
     fecha: str,  # YYYY-MM-DD
-    hora: str,   # HH:MM formato 24h
+    hora: str,  # HH:MM formato 24h
     duracion_minutos: int = 60,
     summary: str = "Cita Dental",
     description: str = "Consulta general",
 ) -> Dict[str, Any]:
     """
     Construye la estructura de datos de una cita siguiendo el formato esperado por la API.
-    
+
     Adaptado del código TypeScript mapperEventData().
-    
+
     Args:
         empresa_id: ID de la empresa/clínica
         especialista_id: ID del especialista
@@ -40,30 +40,29 @@ def build_appointment_data(
         duracion_minutos: Duración de la cita en minutos (default: 60)
         summary: Título de la cita
         description: Descripción de la cita
-    
+
     Returns:
         Dict con la estructura completa de la cita
     """
     # Construir datetime local de la clínica
     datetime_str = f"{fecha}T{hora}:00"
     clinic_tz = ZoneInfo(CLINIC_TIMEZONE)
-    
+
     # Crear momento de inicio en zona horaria de la clínica
     start_local = datetime.fromisoformat(datetime_str).replace(tzinfo=clinic_tz)
-    
+
     # Calcular momento de fin
     end_local = start_local + timedelta(minutes=duracion_minutos)
-    
+
     # Convertir a UTC para enviar al backend
     start_utc = start_local.astimezone(ZoneInfo("UTC"))
     end_utc = end_local.astimezone(ZoneInfo("UTC"))
-    
+
     # Construir estructura de la cita
     appointment_data = {
         "empresaId": empresa_id,
         "summary": summary,
         "description": description,
-        
         # Fechas en UTC (como en TypeScript)
         "start": {
             "dateTime": start_utc.isoformat(),
@@ -73,7 +72,6 @@ def build_appointment_data(
             "dateTime": end_utc.isoformat(),
             "timeZone": "UTC",
         },
-        
         # Asistentes
         "attendees": [
             {
@@ -81,13 +79,11 @@ def build_appointment_data(
                 "displayName": paciente_nombre,
             }
         ],
-        
         # Metadatos
         "create_at": datetime.now(ZoneInfo("UTC")).isoformat(),
         "patientId": paciente_id,
         "especialistaId": especialista_id,
         "available": False,
-        
         # Propiedades extendidas (para Google Calendar)
         "extendedProperties": {
             "private": {
@@ -95,12 +91,11 @@ def build_appointment_data(
                 "specialistId": especialista_id,
             }
         },
-        
         # Opcional: representaciones locales para logging/debugging
         "startLocal": start_local.isoformat(),
         "endLocal": end_local.isoformat(),
     }
-    
+
     return appointment_data
 
 
@@ -133,9 +128,10 @@ def get_availability(
         headers["Authorization"] = f"Bearer {auth_token}"
 
     response = requests.get(API_BASE_URL, params=params, headers=headers)
-    print("GET Availability URL:", response)
+    print("GET Availability URL:", response.json())
     response.raise_for_status()  # Lanza una excepción para errores HTTP (4xx o 5xx)
     return response.json()
+
 
 def save_appointment(appointment_data: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -145,6 +141,7 @@ def save_appointment(appointment_data: Dict[str, Any]) -> Dict[str, Any]:
     response = requests.post(API_BASE_URL, json=appointment_data)
     response.raise_for_status()
     return response.json()
+
 
 def update_appointment(
     appointment_id: str, appointment_data: Dict[str, Any]
@@ -158,6 +155,7 @@ def update_appointment(
     response.raise_for_status()
     return response.json()
 
+
 def delete_appointment(appointment_id: str) -> Dict[str, Any]:
     """
     Llama a la API para eliminar una cita.
@@ -167,6 +165,7 @@ def delete_appointment(appointment_id: str) -> Dict[str, Any]:
     response = requests.delete(url)
     response.raise_for_status()
     return response.json()
+
 
 def find_appointments_by_patient(
     patient_id: str, fecha: Optional[str] = None
@@ -184,11 +183,12 @@ def find_appointments_by_patient(
     response.raise_for_status()
     return response.json()
 
+
 def get_specialist_schedule_config(specialist_id: str) -> Dict[str, Any]:
     """
     Llama a la API para obtener la configuración de horario de un especialista.
     Corresponde a: GET /:id/configure
-    
+
     ADVERTENCIA: Como se mencionó anteriormente, la ruta de la API de Express para esto
     probablemente no funcione correctamente debido al orden de las rutas.
     La ruta '/:id/configure' debería definirse ANTES de '/:pacienteId'.
