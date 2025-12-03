@@ -2,6 +2,7 @@
 Definiciones base para el sistema de agentes.
 Contiene tipos, estados y modelos compartidos.
 """
+
 from typing import Literal, TypedDict, Annotated, Sequence, Optional
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
@@ -11,7 +12,7 @@ from pydantic import BaseModel, Field
 class AgentState(TypedDict):
     """
     Representa el estado de la conversación, incluyendo los datos para agendar una cita.
-    
+
     Attributes:
         messages: La secuencia de mensajes.
         intention: La intención clasificada del usuario.
@@ -24,6 +25,7 @@ class AgentState(TypedDict):
         hora_seleccionada: Hora seleccionada para la cita (opcional).
         booking_complete: Flag para indicar si el proceso de reserva ha finalizado.
     """
+
     messages: Annotated[Sequence[BaseMessage], add_messages]
     intention: str
     next_node: str
@@ -38,6 +40,7 @@ class AgentState(TypedDict):
 
 class Intent(BaseModel):
     """Define el esquema para la clasificación de la intención."""
+
     intention: Literal["consulta", "reserva"] = Field(
         description="La intención principal del mensaje del usuario."
     )
@@ -45,6 +48,7 @@ class Intent(BaseModel):
 
 class RouteQuery(BaseModel):
     """Define el esquema para la decisión de enrutamiento."""
-    next_node: Literal["Knowledge Concierge", "Scheduler", "Negotiator", "Guardian", "end"] = Field(
+
+    next_node: Literal["Knowledge Concierge", "Scheduler", "end"] = Field(
         description="El nodo al que se debe dirigir la conversación a continuación."
     )

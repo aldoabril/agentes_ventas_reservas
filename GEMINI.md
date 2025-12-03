@@ -153,6 +153,23 @@ Opera como la capa de seguridad y cumplimiento del sistema. Supervisa toda acci�
 - **Long Term Memory**: Historial completo de conversaciones, compras previas, datos demográficos y patrones de comportamiento.
 - **Persistencia**: Base de datos + embeddings vectoriales para recuperación contextual.
 
+### Convenciones de implementación (proyecto)
+
+- Short-term memory (conversacional) se guarda por `thread_id` usando `langgraph.checkpoint.memory.MemorySaver`.
+
+  - El proyecto usa una única instancia de `MemorySaver` pasada a `workflow.compile(checkpointer=memory)`.
+  - La convención es mantener una ventana corta (5 mensajes) en `AgentState["messages"]` para evitar contextos demasiado grandes.
+  - Ejemplo de uso en `main.py`: `config = {"configurable": {"thread_id": thread_id}}` y la aplicación gestiona guardado/recupero.
+
+- Long-term memory (persistente): usar el vector store `Chroma` (`knowledge/retriever.py`) indexando embeddings con `user_id`/`thread_id` en metadata.
+
+  - Recuperar contexto relevante via el `retriever` en el `Knowledge Concierge` para respuestas RAG.
+
+- Agent-local ephemeral state: almacenar dentro de `AgentState` bajo claves namespaced (ej.: `negotiator.history`, `scheduler.lock_token`).
+  - Evitar crear múltiples `MemorySaver` por agente; usar una memoria compartida y namespaces para aislar datos.
+
+Estas convenciones están reflejadas en `examples/legacy_main.py`, `workflows/conversation_graph.py` y en la nueva utilería `agents/memory.py`.
+
 ## Dimensión de Autonomía
 
 - **Tipo**: Semi-Autónomo con Supervisión Controlada.

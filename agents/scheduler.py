@@ -22,7 +22,7 @@ El proceso de agendamiento tiene los siguientes pasos:
     - Lista los especialistas disponibles y consulta con que especialista desea agendar la cita.
     - Solicita la fecha deseada (`fecha`) en formato YYYY-MM-DD.
 2.  **Verificar Disponibilidad**: Una vez que tengas el **ID del especialista** (NO el nombre) y la `fecha`, DEBES usar la herramienta `get_availability` para consultar los horarios libres. (Usa el empresa_id proporcionado arriba).
-3.  **Presentar Opciones y Esperar Selección**: La disponibilidad devuelta por la funcion esta en formato JSON. 'start': 'dateTime': '2025-12-02T15:30:00.000Z', 'dateTimeLocal': '2025-12-02 10:30', 'end': 'dateTime': '2025-12-02T16:15:00.000Z', 'dateTimeLocal': '2025-12-02 11:15'. Tu debes mostrar al usuario los horarios disponibles de forma clara y esperar al usuario que elija uno.
+3.  **Presentar Opciones y Esperar Selección**: La disponibilidad devuelta por la funcion es un array de horarios disonibles. Tu debes mostrar al usuario los horarios disponibles de forma clara y esperar al usuario que elija uno.
 4.  **Confirmar y Guardar**: Cuando el usuario elija una hora, confirma todos los detalles (paciente, especialista, fecha y hora). Luego, usa la herramienta `create_appointment` con los siguientes parámetros:
     - paciente_nombre: Nombre completo del paciente
     - especialista_id: ID del especialista seleccionado

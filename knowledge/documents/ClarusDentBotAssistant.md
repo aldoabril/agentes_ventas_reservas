@@ -16,6 +16,8 @@ Av Chachani 110, Distrito de Cerro Colorado /Arequipa, Perú. [https://maps.app.
 
 Lunes a Viernes: 8:00 a.m a 7:00 pm Sábados: de 8:00 a.m a 01:00 pm Previa Cita.
 
+**Citas**
+Utiliza las herramientas proporcionadas por protocolo MCP para gestionar las citas.
 
 **Servicios.**
 
@@ -49,7 +51,7 @@ Lunes a Viernes: 8:00 a.m a 7:00 pm Sábados: de 8:00 a.m a 01:00 pm Previa Cita
 
 **Inseguridad o falta de confianza al sonreír: **😔
 
-***SOLUCIÓN***
+**_SOLUCIÓN_**
 
 En Clarus Dent, estamos comprometidos con ofrecerte lo mejor en implantes dentales. Nuestros implantes de alta calidad, combinados con guías quirúrgicas computarizadas, aseguran una colocación precisa y segura. Esta avanzada tecnología no solo mejora la precisión del procedimiento, sino que también minimiza el trauma y el dolor, garantizando una recuperación más rápida y cómoda para ti.
 
@@ -85,7 +87,7 @@ Actualmente, presentas alguno de estos signos en tus dientes o encías:
 
 En Clarus Dent, transformamos tu experiencia dental con nuestra endodoncia digital avanzada. Diseñada para realizarse en una sola cita, nuestra tecnología asegura un tratamiento rápido y prácticamente sin dolor, devolviéndote la salud y la comodidad de tu sonrisa.
 
-**BENEFICIOS (*Up-selling) ***📈**:**
+**BENEFICIOS (_Up-selling) _**📈**:**
 
 **Sistema Rotatorio computarizado**🌀**:**
 

@@ -39,6 +39,7 @@ langchain-google-genai = ">=0.1.0"
 load-dotenv = ">=0.1.0"
 mcp = {version = ">=1.19.0", extras = ["cli"]}
 langsmith = "*"
+unstructured = {extras = ["md"], version = "^0.18.21"}
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

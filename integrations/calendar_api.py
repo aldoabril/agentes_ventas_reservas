@@ -109,7 +109,7 @@ def get_availability(
     """
     Llama a la API para obtener la disponibilidad de un especialista.
     Corresponde a un día, la respuesta incluye los horarios disponibles para ese día."
-     
+
     """
     params = {
         "empresaId": empresa_id,
@@ -127,9 +127,21 @@ def get_availability(
     url = f"{API_BASE_URL}/dia"
 
     response = requests.get(url, params=params, headers=headers)
-    print("GET Availability URL:", response.json())
+
+    # Convertir la respuesta a diccionario
+    data = response.json()
+
+    # Extraer solo las horas de inicio (dateTimeLocal) de citas disponibles
+    horarios_disponibles = [
+        cita["start"]["dateTimeLocal"]
+        for cita in data.get("citas", [])
+        if cita.get("available")
+    ]
+
+    print("Horarios disponibles:", horarios_disponibles)
+
     response.raise_for_status()  # Lanza una excepción para errores HTTP (4xx o 5xx)
-    return response.json()
+    return {"horarios_disponibles": horarios_disponibles}
 
 
 def save_appointment(appointment_data: Dict[str, Any]) -> Dict[str, Any]:
