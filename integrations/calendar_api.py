@@ -108,17 +108,13 @@ def get_availability(
 ) -> Dict[str, Any]:
     """
     Llama a la API para obtener la disponibilidad de un especialista.
-    Corresponde a: GET /
-    La llamada CURL sería algo así:
-    curl -X GET "https://us-central1-odontoplus-4db47.cloudfunctions.net/api/v1/citas/cita?empresaId=hIntsAEzBwy8Hwi4DNcf&especialistaId=EjEoM4k4RpkJWf585ZSc&fecha=2025-11-18" \
-     -H "Content-Type: application/json" \
-     -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFakVvTTRrNFJwa0pXZjU4NVpTcSIsImVtcHJlc2EiOiJoSW50c0FFekJ3eThId2k0RE5jZiIsImlhdCI6MTcyODA1Mzk5M30.HCoHtyuJYtKcNv0imD2nCAmxxoB89PL1g7UIC6MYmAo"
+    Corresponde a un día, la respuesta incluye los horarios disponibles para ese día."
      
     """
     params = {
         "empresaId": empresa_id,
         "especialistaId": especialista_id,
-        "fechaInif": fecha,
+        "fechaIni": fecha,
         "fechaFin": fecha,
     }
     if paciente_id:
@@ -128,7 +124,7 @@ def get_availability(
     if auth_token:
         headers["Authorization"] = f"Bearer {auth_token}"
 
-    url = f"{API_BASE_URL}/cita"
+    url = f"{API_BASE_URL}/dia"
 
     response = requests.get(url, params=params, headers=headers)
     print("GET Availability URL:", response.json())
