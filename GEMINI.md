@@ -8,6 +8,7 @@ Es un agente IA que atiende a los clientes por mensajería
 - Python
 - Langgraph
 - ChromeDB
+- MCP Tools
 
 ## Arquitectura del sistema
 
