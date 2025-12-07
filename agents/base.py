@@ -41,9 +41,16 @@ class AgentState(TypedDict):
 class Intent(BaseModel):
     """Define el esquema para la clasificación de la intención."""
 
-    intention: Literal["consulta", "reserva"] = Field(
-        description="La intención principal del mensaje del usuario."
-    )
+    intention: Literal[
+        "consulta",
+        "reserva",
+        "reprogramacion",
+        "cancelacion",
+        "queja",  # Lead Qualifier usa queja
+        "objecion",  # Orchestrator usa objecion (podriamos unificar)
+        "invalido",
+        "otro",
+    ] = Field(description="La intención principal del mensaje del usuario.")
 
 
 class RouteQuery(BaseModel):

@@ -20,39 +20,42 @@ def router_node(state: AgentState) -> dict:
     """
     print("--- Ejecutando Orchestrator (Router) ---")
 
-    # 1. Clasificamos la intención basándonos en el último mensaje del usuario.
-    #    Antes se hacía sólo si no existía `state['intention']`, lo que podía dejar
-    #    una intención anterior bloqueando el re-enrutamiento tras una consulta RAG.
-    print("--- Clasificando Intención (dentro del Router) ---")
-    try:
-        llm_classifier = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
-        structured_llm_classifier = llm_classifier.with_structured_output(Intent)
+    current_intention = state.get("intention")
+    if current_intention:
+        print(f"Intención ya existente: {current_intention}. Pasando a enrutamiento.")
+    else:
+        # 1. Clasificamos la intención basándonos en el último mensaje del usuario.
+        print("--- Clasificando Intención (dentro del Router) ---")
+        try:
+            llm_classifier = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
+            structured_llm_classifier = llm_classifier.with_structured_output(Intent)
 
-        qualifier_prompt = ChatPromptTemplate.from_messages(
-            [
-                (
-                    "system",
-                    """Eres un clasificador de intenciones para un asistente de consultorio dental.
-Tu tarea es analizar el mensaje del usuario y clasificarlo en una de las siguientes categorías:
-- consulta: El usuario pide información (precios, horarios, servicios).
-- reserva: El usuario quiere agendar una nueva cita.
-- reprogramacion: El usuario quiere cambiar una cita existente.
-- cancelacion: El usuario quiere cancelar una cita.
-- objecion: El usuario presenta una queja o duda sobre el precio o servicio.
-- invalido: El mensaje es spam, no se entiende o no está relacionado con el consultorio.""",
-                ),
-                ("human", "Analiza el siguiente mensaje del usuario: '{message}'"),
-            ]
-        )
+            qualifier_prompt = ChatPromptTemplate.from_messages(
+                [
+                    (
+                        "system",
+                        """Eres un clasificador de intenciones para un asistente de consultorio dental.
+    Tu tarea es analizar el mensaje del usuario y clasificarlo en una de las siguientes categorías:
+    - consulta: El usuario pide información (precios, horarios, servicios).
+    - reserva: El usuario quiere agendar una nueva cita.
+    - reprogramacion: El usuario quiere cambiar una cita existente.
+    - cancelacion: El usuario quiere cancelar una cita.
+    - queja: El usuario presenta una queja.
+    - objecion: El usuario tiene duda sobre el precio o servicio.
+    - invalido: El mensaje es spam, no se entiende o no está relacionado con el consultorio.""",
+                    ),
+                    ("human", "Analiza el siguiente mensaje del usuario: '{message}'"),
+                ]
+            )
 
-        chain_classifier = qualifier_prompt | structured_llm_classifier
-        # Analizamos siempre el último mensaje del usuario para obtener la intención actual
-        last_message = state["messages"][-1].content
-        result_classifier = chain_classifier.invoke({"message": last_message})
-        state["intention"] = result_classifier.intention
-        print(f"Intención detectada: {state['intention']}")
-    except Exception as e:
-        print(f"Advertencia: fallo en clasificación de intención: {e}")
+            chain_classifier = qualifier_prompt | structured_llm_classifier
+            # Analizamos siempre el último mensaje del usuario para obtener la intención actual
+            last_message = state["messages"][-1].content
+            result_classifier = chain_classifier.invoke({"message": last_message})
+            state["intention"] = result_classifier.intention
+            print(f"Intención detectada: {state['intention']}")
+        except Exception as e:
+            print(f"Advertencia: fallo en clasificación de intención: {e}")
 
     # 2. Configuración del LLM para tomar la decisión de enrutamiento
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)

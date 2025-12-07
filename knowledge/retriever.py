@@ -33,10 +33,12 @@ vector_store = Chroma(
 retriever = vector_store.as_retriever()
 
 # Prompt template
-template = """Answer the question based only on the following context:
+template = """Responde la pregunta basándote únicamente en el siguiente contexto:
 {context}
 
-Question: {question}
+Pregunta: {question}
+
+Si la respuesta no se encuentra en el contexto, responde educadamente que no tienes esa información en este momento.
 """
 prompt = ChatPromptTemplate.from_template(template)
 

@@ -32,12 +32,24 @@ if __name__ == "__main__":
             # Mantener una ventana corta de mensajes en memoria para minimizar contexto
             # (últimas 5 por defecto). Esto evita que el estado crezca indefinidamente.
             try:
-                event_messages = event.get("messages", None)
+                event_messages = event.get("messages", [])
+                if not event_messages:
+                    continue
+                    
+                # Truncar memoria si es necesario
                 truncated = truncate_messages(event_messages)
                 if truncated is not None:
                     event["messages"] = truncated
+                    
+                # Imprimir solo si es un mensaje nuevo (evitar repetir el input del usuario)
+                last_msg = event["messages"][-1]
+                if isinstance(last_msg, HumanMessage):
+                    # Si el último mensaje es del humano, ya lo imprimimos al pedir input.
+                    # A menos que sea un HumanMessage modificado o re-inyectado, lo saltamos.
+                    pass
+                else:
+                    last_msg.pretty_print()
+                    
             except Exception:
                 # No interrumpir el flujo por errores de truncado
                 pass
-
-            event["messages"][-1].pretty_print()

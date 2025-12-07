@@ -8,6 +8,7 @@ from agents import (
     router_node,
     knowledge_concierge_node,
     scheduler_node,
+    lead_qualifier_node,
 )
 
 
@@ -35,12 +36,23 @@ def create_app():
     workflow = StateGraph(AgentState)
     
     # Añadir los nodos al grafo
+    workflow.add_node("Lead Qualifier", lead_qualifier_node)
     workflow.add_node("Orchestrator", router_node)
     workflow.add_node("Knowledge Concierge", knowledge_concierge_node)
     workflow.add_node("Scheduler", scheduler_node)
     
     # Establecer el punto de entrada del grafo
-    workflow.set_entry_point("Orchestrator")
+    workflow.set_entry_point("Lead Qualifier")
+
+    # Definir la lógica de enrutamiento condicional desde el Lead Qualifier
+    workflow.add_conditional_edges(
+        "Lead Qualifier",
+        decide_next_node,
+        {
+            "Orchestrator": "Orchestrator",
+            "end": END
+        }
+    )
     
     # Definir la lógica de enrutamiento condicional desde el Orchestrator
     workflow.add_conditional_edges(
