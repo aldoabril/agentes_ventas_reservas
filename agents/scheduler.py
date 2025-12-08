@@ -8,7 +8,8 @@ from langchain_core.messages import ToolMessage
 from agents.base import AgentState
 from tools.appointment_tools import scheduler_tools
 from config import EMPRESA_ID, PACIENTE_ID
-
+from config import GPT_MODELS, LLM_PROVIDER, GEMINI_MODELS
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 # Prompt del scheduler
 SCHEDULER_SYSTEM_PROMPT = f"""
@@ -58,7 +59,16 @@ def scheduler_node(state: AgentState) -> AgentState:
     print("--- Ejecutando Scheduler & Conflict Resolver ---")
 
     # 1. Configurar el LLM con las herramientas y el prompt
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+    if LLM_PROVIDER == "gemini":
+        llm = ChatGoogleGenerativeAI(
+            model=GEMINI_MODELS.GEMINI_25_FLASH_LITE.value,
+            temperature=0,
+            max_tokens=None,
+            timeout=None,
+            # other params...
+        )
+    else:
+        llm = ChatOpenAI(temperature=0, model=GPT_MODELS.GPT_4O_MINI.value) 
     llm_with_tools = llm.bind_tools(scheduler_tools)
 
     # Creamos el prompt que incluye el system prompt y el historial de mensajes

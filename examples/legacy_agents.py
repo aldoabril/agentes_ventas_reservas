@@ -8,7 +8,7 @@ from langchain_core.messages import BaseMessage, AIMessage, ToolMessage
 from langgraph.graph.message import add_messages
 from langchain_core.tools import tool
 from fastmcp import Client
-
+from config import GPT_4O_MINI
 # Importamos la cadena RAG desde el archivo retriever.py
 from retriever import chain as rag_chain
 
@@ -310,7 +310,7 @@ El proceso de agendamiento tiene los siguientes pasos:
 """
 
     # 1. Configurar el LLM con las herramientas y el nuevo prompt
-    llm = ChatOpenAI(model="gpt-4o", temperature=0)
+    llm = ChatOpenAI(model=GPT_4O_MINI, temperature=0)
     llm_with_tools = llm.bind_tools(scheduler_tools)
 
     # Creamos el prompt que incluye el system prompt y el historial de mensajes

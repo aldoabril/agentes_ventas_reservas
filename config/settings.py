@@ -3,7 +3,7 @@ Configuración centralizada del sistema de agentes de ventas y reservas.
 """
 import os
 from dotenv import load_dotenv
-
+from enum import Enum
 # Cargar variables de entorno
 load_dotenv()
 
@@ -22,15 +22,15 @@ MCP_SERVER_PORT = 8000
 # === Configuración de LLM ===
 LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "openai")
 
-# Configuración específica por proveedor
-if LLM_PROVIDER == "gemini":
-    if not os.environ.get("GOOGLE_API_KEY"):
-        os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
-    DEFAULT_MODEL = "gemini-pro"
-else:
-    if not os.environ.get("OPENAI_API_KEY"):
-        os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
-    DEFAULT_MODEL = "gpt-4o-mini"
+class GEMINI_MODELS(Enum):
+    GEMINI_3_PRO = "gemini-3.5-pro"
+    GEMINI_25_FLASH = "gemini-2.5-flash"
+    GEMINI_25_FLASH_LITE = "gemini-2.5-flash-lite"
+
+class GPT_MODELS(Enum):
+    GPT_4O_MINI = "gpt-4o-mini"
+    GPT_4O = "gpt-4o"
+    GPT_4O_01 = "gpt-4o-01"
 
 # === Configuración de Embeddings ===
 EMBEDDING_MODEL = "text-embedding-3-large"

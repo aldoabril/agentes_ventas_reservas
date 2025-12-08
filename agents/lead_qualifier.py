@@ -2,8 +2,10 @@ from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
-
+from config import GEMINI_MODELS, GPT_MODELS, LLM_PROVIDER
 from .base import AgentState
+from langchain_google_genai import ChatGoogleGenerativeAI
+
 
 # --- Modelos de Datos ---
 
@@ -29,7 +31,16 @@ def lead_qualifier_node(state: AgentState):
     last_message = messages[-1]
     user_input = last_message.content if isinstance(last_message, HumanMessage) else str(last_message)
 
-    llm = ChatOpenAI(temperature=0, model="gpt-4o-mini") 
+    if LLM_PROVIDER == "gemini":
+        llm = ChatGoogleGenerativeAI(
+            model=GEMINI_MODELS.GEMINI_25_FLASH_LITE.value,
+            temperature=0,
+            max_tokens=None,
+            timeout=None,
+            max_retries=2,
+        )
+    else:
+        llm = ChatOpenAI(temperature=0, model=GPT_MODELS.GPT_4O_MINI.value) 
 
     # 2. EJECUTAR GUARDRAIL DE SEGURIDAD
     safety_prompt_template = """Eres un Guardrail de Seguridad AI.

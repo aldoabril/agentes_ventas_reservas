@@ -6,7 +6,8 @@ from langchain_core.messages import HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from agents.base import AgentState, Intent, RouteQuery
-
+from config import GPT_MODELS, LLM_PROVIDER, GEMINI_MODELS  
+from langchain_google_genai import ChatGoogleGenerativeAI
 def router_node(state: AgentState) -> dict:
     """
     Nodo Router: Decide el siguiente paso basado en la intención.
@@ -25,8 +26,17 @@ def router_node(state: AgentState) -> dict:
     
     last_message = messages[-1]
     user_input = last_message.content if isinstance(last_message, HumanMessage) else str(last_message)
-
-    llm = ChatOpenAI(temperature=0, model="gpt-4o-mini") # Model rápido y capaz
+    if LLM_PROVIDER == "gemini":
+        llm = ChatGoogleGenerativeAI(
+            model=GEMINI_MODELS.GEMINI_25_FLASH_LITE.value,
+            temperature=0,
+            max_tokens=None,
+            timeout=None,
+            # other params...
+        )
+    else:
+        llm = ChatOpenAI(temperature=0, model=GPT_MODELS.GPT_4O_MINI.value) 
+    #llm  = ChatOpenAI(temperature=0, model=DEFAULT_MODEL) # Model rápido y capaz
 
     # 2. Clasificación de Intención (Siempre ejecutada ahora que Lead Qualifier no lo hace)
     #    NOTA: Si ya viniera pre-clasificada (ej. por algún otro mecanismo), podríamos saltar esto.
