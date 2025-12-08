@@ -61,7 +61,7 @@ def scheduler_node(state: AgentState) -> AgentState:
     # 1. Configurar el LLM con las herramientas y el prompt
     if LLM_PROVIDER == "gemini":
         llm = ChatGoogleGenerativeAI(
-            model=GEMINI_MODELS.GEMINI_25_FLASH_LITE.value,
+            model=GEMINI_MODELS.GEMINI_25_FLASH.value,
             temperature=0,
             max_tokens=None,
             timeout=None,
