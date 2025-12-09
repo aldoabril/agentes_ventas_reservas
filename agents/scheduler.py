@@ -10,12 +10,16 @@ from tools.appointment_tools import scheduler_tools
 from config import EMPRESA_ID, PACIENTE_ID
 from config import GPT_MODELS, LLM_PROVIDER, GEMINI_MODELS
 from langchain_google_genai import ChatGoogleGenerativeAI
+from datetime import datetime
 
-# Prompt del scheduler
-SCHEDULER_SYSTEM_PROMPT = f"""
+# Prompt del scheduler (TEMPLATE)
+# Removemos la f-string directa y dejamos placeholders {current_date} y {current_time}
+SCHEDULER_SYSTEM_PROMPT_TEMPLATE = """
 Eres un asistente de agendamiento de citas para un consultorio dental. Tu objetivo es guiar al usuario paso a paso para agendar una cita. Eres amable, eficiente y muy estructurado.
-El ID de la empresa es: {EMPRESA_ID}. USA ESTE ID SIEMPRE QUE SE REQUIERA 'empresa_id'. NO LO PREGUNTES.
-El ID del paciente es: {PACIENTE_ID}. USA ESTE ID SIEMPRE QUE SE REQUIERA 'paciente_id'. NO LO PREGUNTES.
+La fecha actual es: {current_date} y la hora actual es: {current_time}.  No se puede agendar citas para fechas y horas anteriores a la fecha y hora actual.
+El ID de la empresa es: {empresa_id}. USA ESTE ID SIEMPRE QUE SE REQUIERA 'empresa_id'. NO LO PREGUNTES.
+El ID del paciente es: {paciente_id}. USA ESTE ID SIEMPRE QUE SE REQUIERA 'paciente_id'. NO LO PREGUNTES.
+
 
 El proceso de agendamiento tiene los siguientes pasos:
 1.  **Obtener Datos Iniciales**: Necesitas la siguiente información del usuario. Ve pidiéndola una por una si no la tienes:
@@ -33,8 +37,8 @@ El proceso de agendamiento tiene los siguientes pasos:
 
 **Formato de Presentación (MUY IMPORTANTE):**
 - Las herramientas devuelven datos en JSON. TÚ DEBES convertirlos a texto natural y amigable.
-- Cuando llames a `get_lista_especialistas`, la herramienta te dará una lista de especialistas con su ID y nombre. Debes presentar solo los nombres al usuario (ej: "Tenemos a Dr. Juan Pérez y Dra. María López"). Cuando el usuario elija uno, DEBES buscar su ID correspondiente en la lista que recibiste y usar ESE ID para las otras herramientas como `get_availability`. NUNCA uses el nombre como `especialista_id`.
-- Cuando uses `get_availability`, extrae SOLO las horas de inicio y presenta como: "Para esa fecha tengo disponibilidad a las: 9:00 AM, 10:30 AM, 2:00 PM. ¿Cuál prefieres?"
+- Cuando llames a `get_lista_especialistas`, la herramienta te dará una lista de especialistas con su ID y nombre. Debes presentar solo los nombres al usuario (ej: "Tenemos a 1. Dr. Juan Pérez y 2. Dra. María López"). Cuando el usuario elija uno, DEBES buscar su ID correspondiente en la lista que recibiste y usar ESE ID para las otras herramientas como `get_availability`. NUNCA uses el nombre como `especialista_id`.
+- Cuando uses `get_availability`, verifica primero que la fecha sea valida y que sea mayor igual a la fecha actual y hora actual. Si no es valida, informa al usuario que no se puede agendar para esa fecha. Si es valida, extrae SOLO las horas de inicio y presenta como: "Para esa fecha tengo disponibilidad a las: 9:00 AM, 10:30 AM, 2:00 PM. ¿Cuál prefieres?"
 - NUNCA muestres JSON crudo al usuario. Siempre convierte a lenguaje natural.
 
 **Instrucciones Importantes:**
@@ -58,7 +62,12 @@ def scheduler_node(state: AgentState) -> AgentState:
     """
     print("--- Ejecutando Scheduler & Conflict Resolver ---")
 
-    # 1. Configurar el LLM con las herramientas y el prompt
+    # 1. Calcular fecha y hora actual dinámicamente
+    now = datetime.now()
+    current_date = now.strftime("%Y-%m-%d")
+    current_time = now.strftime("%H:%M:%S")
+
+    # 2. Configurar el LLM con las herramientas y el prompt
     if LLM_PROVIDER == "gemini":
         llm = ChatGoogleGenerativeAI(
             model=GEMINI_MODELS.GEMINI_25_FLASH.value,
@@ -71,30 +80,38 @@ def scheduler_node(state: AgentState) -> AgentState:
         llm = ChatOpenAI(temperature=0, model=GPT_MODELS.GPT_4O_MINI.value) 
     llm_with_tools = llm.bind_tools(scheduler_tools)
 
+    # 3. Formatear el prompt dinámicamente
+    formatted_system_prompt = SCHEDULER_SYSTEM_PROMPT_TEMPLATE.format(
+        current_date=current_date,
+        current_time=current_time,
+        empresa_id=EMPRESA_ID,
+        paciente_id=PACIENTE_ID
+    )
+
     # Creamos el prompt que incluye el system prompt y el historial de mensajes
     prompt = ChatPromptTemplate.from_messages(
         [
-            ("system", SCHEDULER_SYSTEM_PROMPT),
+            ("system", formatted_system_prompt),
             ("placeholder", "{messages}"),
         ]
     )
 
     chain = prompt | llm_with_tools
 
-    # 2. Limitar el historial de mensajes para evitar exceder límites de tokens
+    # 4. Limitar el historial de mensajes para evitar exceder límites de tokens
     # Mantenemos solo los últimos 10 mensajes para contexto
     recent_messages = (
         state["messages"][-10:] if len(state["messages"]) > 10 else state["messages"]
     )
 
-    # 3. Invocar el modelo con el historial de mensajes limitado
+    # 5. Invocar el modelo con el historial de mensajes limitado
     response_ai_message = chain.invoke({"messages": recent_messages})
 
-    # 4. Si el LLM no necesita usar una herramienta, simplemente devuelve su respuesta.
+    # 6. Si el LLM no necesita usar una herramienta, simplemente devuelve su respuesta.
     if not response_ai_message.tool_calls:
         return {"messages": [response_ai_message]}
 
-    # 5. Si el LLM decide usar herramientas, las ejecutamos
+    # 7. Si el LLM decide usar herramientas, las ejecutamos
     tool_messages = []
 
     for tool_call in response_ai_message.tool_calls:
@@ -113,7 +130,7 @@ def scheduler_node(state: AgentState) -> AgentState:
             )
         )
 
-    # 6. Después de ejecutar las herramientas, invocamos al LLM nuevamente
+    # 8. Después de ejecutar las herramientas, invocamos al LLM nuevamente
     # para que procese los resultados y genere una respuesta amigable
     messages_with_tool_results = recent_messages + [response_ai_message] + tool_messages
     final_response = chain.invoke({"messages": messages_with_tool_results})
