@@ -8,6 +8,9 @@ from langchain_core.messages import ToolMessage, AIMessage
 from agents.base import AgentState
 from tools.appointment_tools import scheduler_tools
 from config import EMPRESA_ID, PACIENTE_ID
+from agents.memory import get_safe_history_window
+
+
 from config import GPT_MODELS, LLM_PROVIDER, GEMINI_MODELS
 from langchain_google_genai import ChatGoogleGenerativeAI
 from datetime import datetime
@@ -94,11 +97,16 @@ def scheduler_node(state: AgentState) -> dict:
 
     chain = prompt | llm_with_tools
 
-    # Historial inicial
-    messages = state["messages"][-10:] if len(state["messages"]) > 10 else state["messages"]
+    # Historial inicial usando ventana segura
+    messages = get_safe_history_window(state["messages"], max_messages=10)
     
     # Recolector de mensajes GENERADOS en este turno (para devolver al grafo)
     new_messages = []
+
+    # Check safe-guard para Gemini: Si el último mensaje es AI, no debemos invocar (doble turno AI)
+    if messages and isinstance(messages[-1], AIMessage):
+        print("--- Advertencia: Último mensaje es AI. Saltando ejecución para evitar error de turno (Gemini). ---")
+        return {"messages": []}
 
     # 2. Bucle ReAct
     MAX_ITERATIONS = 5

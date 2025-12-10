@@ -111,11 +111,35 @@ def get_availability(
     Corresponde a un día, la respuesta incluye los horarios disponibles para ese día."
 
     """
+    # Construir datetime local de la clínica para el inicio y fin del día
+    clinic_tz = ZoneInfo(CLINIC_TIMEZONE)
+    
+    # Parsear fecha YYYY-MM-DD
+    fecha_dt = datetime.strptime(fecha, "%Y-%m-%d")
+
+    # Obtener fecha actual en zona horaria de la clínica
+    now_local = datetime.now(clinic_tz)
+    
+    # Si la fecha solicitada es hoy, usar hora actual
+    # Si es otra fecha (futuro o pasado), usar 00:00:00
+    if fecha_dt.date() == now_local.date():
+        start_local = now_local
+    else:
+        # Inicio del día: 00:00:00 en zona horaria de la clínica
+        start_local = fecha_dt.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=clinic_tz)
+    
+    # Fin del día: 23:59:59 en zona horaria de la clínica
+    end_local = fecha_dt.replace(hour=23, minute=59, second=59, microsecond=999999, tzinfo=clinic_tz)
+
+    # Convertir a UTC
+    start_utc = start_local.astimezone(ZoneInfo("UTC"))
+    end_utc = end_local.astimezone(ZoneInfo("UTC"))
+
     params = {
         "empresaId": empresa_id,
         "especialistaId": especialista_id,
-        "fechaIni": fecha,
-        "fechaFin": fecha,
+        "fechaIni": start_utc.isoformat(),
+        "fechaFin": end_utc.isoformat(),
     }
     if paciente_id:
         params["pacienteId"] = paciente_id
