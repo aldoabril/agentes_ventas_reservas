@@ -14,6 +14,9 @@ from .settings import (
     VECTOR_STORE_PATH,
     DOCUMENTS_PATH,
     ESPECIALISTAS,
+    RAG_CONFIG,
+    RAG_LLM_MODEL_OPENAI,
+    RAG_LLM_MODEL_GEMINI,
 )
 
 __all__ = [
@@ -31,4 +34,7 @@ __all__ = [
     "VECTOR_STORE_PATH",
     "DOCUMENTS_PATH",
     "ESPECIALISTAS",
+    "RAG_CONFIG",
+    "RAG_LLM_MODEL_OPENAI",
+    "RAG_LLM_MODEL_GEMINI",
 ]
