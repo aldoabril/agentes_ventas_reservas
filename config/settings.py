@@ -47,3 +47,18 @@ ESPECIALISTAS = {
     "GMcKghlgHvTkoPxj9t4X": "Dr. Juan Pérez",
     "oxFsA3phVDEVuw3jCQFx": "Dr. María López"
 }
+
+# === Configuración de RAG ===
+RAG_CONFIG = {
+    "top_k": 5,  # Número de documentos a recuperar
+    "similarity_threshold": 0.25,  # Umbral mínimo de similitud (0.0-1.0)
+    "search_type": "similarity",  # "similarity" o "mmr" (Maximum Marginal Relevance)
+    "chunk_size": 1000,
+    "chunk_overlap": 200,
+    "fetch_k": 20,  # Número de documentos a recuperar antes de filtrar por threshold
+}
+
+# === Configuración de LLM para RAG ===
+# Modelo por defecto para RAG (puede ser diferente del orchestrator)
+RAG_LLM_MODEL_OPENAI = GPT_MODELS.GPT_4O_MINI.value
+RAG_LLM_MODEL_GEMINI = GEMINI_MODELS.GEMINI_25_FLASH.value
