@@ -7,9 +7,15 @@ from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
 from workflows.conversation_graph import create_app
 from agents.memory import truncate_messages
+import logging
 
 # Cargar variables de entorno
 load_dotenv()
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 if __name__ == "__main__":
     # Crear la aplicación del grafo

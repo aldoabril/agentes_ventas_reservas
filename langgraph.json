@@ -1,0 +1,7 @@
+{
+    "dependencies": ["."],
+    "graphs": {
+      "conversation": "./workflows/conversation_graph.py:create_app"
+    },
+    "env": ".env"
+  }

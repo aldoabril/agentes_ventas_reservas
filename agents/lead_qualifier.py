@@ -5,6 +5,10 @@ from pydantic import BaseModel, Field
 from config import GEMINI_MODELS, GPT_MODELS, LLM_PROVIDER
 from .base import AgentState
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langsmith import traceable
+import logging
+
+
 
 
 # --- Modelos de Datos ---
@@ -17,6 +21,10 @@ class SafetyResult(BaseModel):
 # --- Nodo Principal ---
 
 def lead_qualifier_node(state: AgentState):
+    logging.info("Lead Qualifier iniciando procesamiento")
+
+
+    
     """
     Nodo Lead Qualifier (Guardrail Only):
     1. Check de Seguridad: Filtra input tóxico/spam.
@@ -83,8 +91,17 @@ Responde con JSON."""
             "next_node": "end"
         }
 
+        
+
     # 3. ÉXITO -> Pasar al Orchestrator (sin clasificar intención aquí)
+    
+
     print("--- Lead Qualifier: Mensaje Seguro. Pasando a Orchestrator ---")
+    internal_message = AIMessage(
+        content="[Lead Qualifier] Detecté intención de agendamiento. Derivando al Orchestrator.",
+        name="lead_qualifier"
+    )
+    
     return {
         "next_node": "Orchestrator" 
     }
