@@ -23,7 +23,7 @@ MCP_SERVER_PORT = 8000
 LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "openai")
 
 class GEMINI_MODELS(Enum):
-    GEMINI_3_PRO = "gemini-3.5-pro"
+    GEMINI_3_PRO = "gemini-3-pro-preview"
     GEMINI_25_FLASH = "gemini-2.5-flash"
     GEMINI_25_FLASH_LITE = "gemini-2.5-flash-lite"
 

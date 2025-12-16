@@ -183,7 +183,12 @@ def knowledge_concierge_node(state: AgentState) -> AgentState:
             
             response_time = time.time() - start_time
             print(f"Tiempo de respuesta: {response_time:.2f}s")
-            return {"messages": [AIMessage(content=response)]}
+            return {
+                "messages": [AIMessage(content=response)],
+                "last_executed_node": "Knowledge Concierge",
+                "rag_chunks": [],  # No documents found
+                "rag_scores": []
+            }
         
         # 6. Formatear contexto de documentos
         context = format_context_from_documents(documents, scores)
@@ -228,7 +233,31 @@ def knowledge_concierge_node(state: AgentState) -> AgentState:
         print(f"Respuesta generada exitosamente")
         print(f"Tiempo total de respuesta: {response_time:.2f}s")
         
-        return {"messages": [AIMessage(content=response)]}
+        # Check for Guardian feedback and incorporate it
+        guardian_feedback = state.get("guardian_feedback")
+        guardian_modifications = state.get("guardian_modifications")
+        
+        if guardian_feedback:
+            print(f"--- Knowledge Concierge: Recibiendo feedback del Guardian ---")
+            print(f"Feedback: {guardian_feedback}")
+            # Incorporate feedback into response generation if needed
+            # For now, the feedback will be in the state for the next iteration
+        
+        # Store RAG documents in state for Guardian validation
+        # Convert Document objects to dictionaries for state storage
+        rag_chunks = []
+        for doc in documents:
+            rag_chunks.append({
+                "content": doc.page_content,
+                "metadata": doc.metadata if hasattr(doc, 'metadata') else {}
+            })
+        
+        return {
+            "messages": [AIMessage(content=response)],
+            "last_executed_node": "Knowledge Concierge",
+            "rag_chunks": rag_chunks,  # Store RAG chunks for Guardian
+            "rag_scores": scores if scores else []  # Store scores for context
+        }
         
     except Exception as e:
         print(f"--- Error en Knowledge Concierge: {e} ---")
@@ -241,4 +270,7 @@ def knowledge_concierge_node(state: AgentState) -> AgentState:
             "¿Podrías intentar reformularla o contactarnos directamente? "
             "También puedes agendar una cita para una consulta personalizada."
         )
-        return {"messages": [AIMessage(content=error_response)]}
+        return {
+            "messages": [AIMessage(content=error_response)],
+            "last_executed_node": "Knowledge Concierge"
+        }

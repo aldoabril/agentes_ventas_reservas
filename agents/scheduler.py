@@ -71,6 +71,37 @@ def scheduler_node(state: AgentState) -> dict:
     current_date = now.strftime("%Y-%m-%d")
     current_time = now.strftime("%H:%M:%S")
 
+    # Check for Guardian feedback and incorporate it into the system prompt
+    guardian_feedback = state.get("guardian_feedback")
+    guardian_modifications = state.get("guardian_modifications")
+    
+    # Build base system prompt
+    base_system_prompt = SCHEDULER_SYSTEM_PROMPT_TEMPLATE.format(
+        current_date=current_date,
+        current_time=current_time,
+        empresa_id=EMPRESA_ID,
+        paciente_id=PACIENTE_ID
+    )
+    
+    # Enhance with Guardian feedback if available
+    if guardian_feedback:
+        print(f"--- Scheduler: Recibiendo feedback del Guardian ---")
+        print(f"Feedback: {guardian_feedback}")
+        if guardian_modifications:
+            print(f"Modificaciones sugeridas: {guardian_modifications}")
+        
+        guardian_context = f"\n\n[FEEDBACK CRÍTICO DEL GUARDIAN]\n"
+        guardian_context += f"Tu último mensaje fue RECHAZADO por el Guardian Agent.\n"
+        guardian_context += f"Razón: {guardian_feedback}\n"
+        if guardian_modifications:
+            guardian_context += f"Corrección requerida: {guardian_modifications}\n"
+        guardian_context += f"\nIMPORTANTE: Debes corregir tu respuesta basándote EXACTAMENTE en los tool_outputs. "
+        guardian_context += f"No inventes datos. Verifica fechas, horas, precios e IDs con los resultados de las herramientas.\n"
+        
+        formatted_system_prompt = base_system_prompt + guardian_context
+    else:
+        formatted_system_prompt = base_system_prompt
+
     if LLM_PROVIDER == "gemini":
         llm = ChatGoogleGenerativeAI(
             model=GEMINI_MODELS.GEMINI_25_FLASH.value,
@@ -82,13 +113,6 @@ def scheduler_node(state: AgentState) -> dict:
         llm = ChatOpenAI(temperature=0, model=GPT_MODELS.GPT_4O_MINI.value) 
     
     llm_with_tools = llm.bind_tools(scheduler_tools)
-
-    formatted_system_prompt = SCHEDULER_SYSTEM_PROMPT_TEMPLATE.format(
-        current_date=current_date,
-        current_time=current_time,
-        empresa_id=EMPRESA_ID,
-        paciente_id=PACIENTE_ID
-    )
 
     prompt = ChatPromptTemplate.from_messages([
         ("system", formatted_system_prompt),
@@ -163,4 +187,8 @@ def scheduler_node(state: AgentState) -> dict:
         # El ciclo continuará: El LLM verá el ToolMessage en la siguiente iteración ("Observe")
 
     # Devolver SOLO los mensajes nuevos añadidos en este turno
-    return {"messages": new_messages}
+    # Also track that Scheduler executed
+    return {
+        "messages": new_messages,
+        "last_executed_node": "Scheduler"
+    }

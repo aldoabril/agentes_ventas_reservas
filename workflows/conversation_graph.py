@@ -9,6 +9,8 @@ from agents import (
     knowledge_concierge_node,
     scheduler_node,
     lead_qualifier_node,
+    guardian_node,
+    human_handoff_node,
 )
 
 
@@ -40,6 +42,8 @@ def create_app():
     workflow.add_node("Orchestrator", router_node)
     workflow.add_node("Knowledge Concierge", knowledge_concierge_node)
     workflow.add_node("Scheduler", scheduler_node)
+    workflow.add_node("Guardian", guardian_node)
+    workflow.add_node("Human Handoff", human_handoff_node)
     
     # Establecer el punto de entrada del grafo
     workflow.set_entry_point("Lead Qualifier")
@@ -65,9 +69,25 @@ def create_app():
         }
     )
     
-    # Definir edges desde los agentes especializados al final
-    workflow.add_edge("Knowledge Concierge", END)
-    workflow.add_edge("Scheduler", END)
+    # Definir edges desde los agentes especializados al Guardian (intercept before END)
+    # The Guardian validates all actions before they reach the user
+    workflow.add_edge("Knowledge Concierge", "Guardian")
+    workflow.add_edge("Scheduler", "Guardian")
+    
+    # Guardian routes based on verdict
+    workflow.add_conditional_edges(
+        "Guardian",
+        decide_next_node,
+        {
+            "Knowledge Concierge": "Knowledge Concierge",  # Retry with feedback
+            "Scheduler": "Scheduler",  # Retry with feedback
+            "Human Handoff": "Human Handoff",  # Escalate
+            "end": END  # Approved
+        }
+    )
+    
+    # Human Handoff always ends
+    workflow.add_edge("Human Handoff", END)
     
     # Compilar el grafo con memoria
     memory = MemorySaver()
