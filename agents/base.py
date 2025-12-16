@@ -9,7 +9,7 @@ from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
 
 
-class AgentState(TypedDict):
+class AgentState(TypedDict, total=False):
     """
     Representa el estado de la conversación, incluyendo los datos para agendar una cita.
 
@@ -24,6 +24,10 @@ class AgentState(TypedDict):
         horarios_disponibles: Lista de horarios disponibles (opcional).
         hora_seleccionada: Hora seleccionada para la cita (opcional).
         booking_complete: Flag para indicar si el proceso de reserva ha finalizado.
+        guardian_verdict: Verdicto del Guardian Agent (opcional).
+        guardian_feedback: Feedback del Guardian para corrección (opcional).
+        guardian_modifications: Modificaciones sugeridas por el Guardian (opcional).
+        escalation_reason: Razón de escalación a humano (opcional).
     """
 
     messages: Annotated[Sequence[BaseMessage], add_messages]
@@ -36,6 +40,14 @@ class AgentState(TypedDict):
     horarios_disponibles: Optional[list]
     hora_seleccionada: Optional[str]
     booking_complete: Optional[bool]
+    guardian_verdict: Optional[dict]
+    guardian_feedback: Optional[str]
+    guardian_modifications: Optional[str]
+    escalation_reason: Optional[str]
+    last_executed_node: Optional[str]  # Track which node last executed for Guardian
+    guardian_rejection_count: Optional[int]  # Track number of rejections to prevent infinite loops
+    rag_chunks: Optional[list]  # RAG documents retrieved by Knowledge Concierge
+    rag_scores: Optional[list]   # Similarity scores for RAG documents
 
 
 class Intent(BaseModel):
