@@ -17,6 +17,7 @@ from .settings import (
     RAG_CONFIG,
     RAG_LLM_MODEL_OPENAI,
     RAG_LLM_MODEL_GEMINI,
+    TELEGRAM_BOT_TOKEN,
 )
 
 __all__ = [
@@ -37,4 +38,5 @@ __all__ = [
     "RAG_CONFIG",
     "RAG_LLM_MODEL_OPENAI",
     "RAG_LLM_MODEL_GEMINI",
+    "TELEGRAM_BOT_TOKEN",
 ]

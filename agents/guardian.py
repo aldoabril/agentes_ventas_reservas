@@ -564,10 +564,17 @@ def guardian_node(state: AgentState) -> dict:
     verdict = guardian.validate(guardian_input)
     
     # Store verdict in state (for debugging/auditing)
+    # Store verdict in state (for debugging/auditing)
+    # Asegurar que feedback sea string
+    feedback_text = verdict.feedback
+    if isinstance(feedback_text, list):
+        feedback_text = " ".join(feedback_text)
+    feedback_text = str(feedback_text)
+
     state["guardian_verdict"] = {
         "status": verdict.status,
         "risk_score": verdict.risk_score,
-        "feedback": verdict.feedback,
+        "feedback": feedback_text,
         "source_agent": source_agent
     }
     
@@ -612,17 +619,10 @@ def guardian_node(state: AgentState) -> dict:
             }
         
         # Add feedback message to help the agent correct itself
-        feedback_message = AIMessage(
-            content=f"[Guardian Feedback - Intento {rejection_count}/{MAX_REJECTIONS}] Tu mensaje fue rechazado. "
-                   f"Razón: {verdict.feedback}\n\n"
-                   f"Sugerencia de corrección: {verdict.modifications or 'Revisa los datos y vuelve a intentar.'}\n\n"
-                   f"Por favor, corrige tu respuesta basándote en la evidencia disponible.",
-            name="guardian"
-        )
+        
         
         # Route back to the source agent with feedback
         return {
-            "messages": [feedback_message],
             "next_node": source_agent,  # Return to source agent
             "guardian_verdict": state["guardian_verdict"],
             "guardian_feedback": verdict.feedback,

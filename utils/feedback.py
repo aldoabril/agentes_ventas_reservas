@@ -5,7 +5,7 @@ Integra con LangSmith para almacenar y analizar feedback.
 import os
 from typing import Optional, Dict, Any, Literal
 from datetime import datetime
-from langsmith import Client, feedback
+from langsmith import Client
 
 from utils.logger import get_logger
 from utils.langsmith_config import get_langsmith_client

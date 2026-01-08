@@ -30,7 +30,7 @@ def setup_langsmith() -> bool:
     
     # Verificar variables de entorno
     api_key = os.getenv("LANGCHAIN_API_KEY") or os.getenv("LANGSMITH_API_KEY")
-    project = os.getenv("LANGCHAIN_PROJECT", "agentes-ventas-reservas")
+    project = os.getenv("LANGCHAIN_PROJECT")
     endpoint = os.getenv("LANGCHAIN_ENDPOINT", "https://api.smith.langchain.com")
     tracing_enabled = os.getenv("LANGCHAIN_TRACING_V2", "false").lower() == "true"
     
@@ -93,7 +93,7 @@ def get_langsmith_callbacks(
     
     try:
         tracer = LangChainTracer(
-            project_name=os.getenv("LANGCHAIN_PROJECT", "agentes-ventas-reservas"),
+            project_name=os.getenv("LANGCHAIN_PROJECT"),
             client=_langsmith_client
         )
         callbacks.append(tracer)

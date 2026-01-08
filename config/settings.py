@@ -71,10 +71,13 @@ LOG_FILE = os.environ.get("LOG_FILE", None)  # Opcional: ruta a archivo de log
 # === Configuración de LangSmith ===
 LANGCHAIN_TRACING_V2 = os.environ.get("LANGCHAIN_TRACING_V2", "false").lower() == "true"
 LANGCHAIN_API_KEY = os.environ.get("LANGCHAIN_API_KEY") or os.environ.get("LANGSMITH_API_KEY")
-LANGCHAIN_PROJECT = os.environ.get("LANGCHAIN_PROJECT", "agentes-ventas-reservas")
+LANGCHAIN_PROJECT = os.environ.get("LANGCHAIN_PROJECT")
 LANGCHAIN_ENDPOINT = os.environ.get("LANGCHAIN_ENDPOINT", "https://api.smith.langchain.com")
 
 # === Configuración de Error Handling ===
 MAX_RETRY_ATTEMPTS = int(os.environ.get("MAX_RETRY_ATTEMPTS", "3"))
 RETRY_INITIAL_WAIT = float(os.environ.get("RETRY_INITIAL_WAIT", "1.0"))
 RETRY_MAX_WAIT = float(os.environ.get("RETRY_MAX_WAIT", "10.0"))
+
+# === Configuración de Telegram Bot ===
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
