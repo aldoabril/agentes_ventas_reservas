@@ -466,6 +466,8 @@ EJEMPLOS DE DETECCIÓN:
 - Knowledge Concierge: "El precio es S/ 150" y está en rag_chunks → APPROVED (tiene evidencia RAG, no es alucinación)
 - Knowledge Concierge: "El precio es S/ 150" pero NO está en rag_chunks ni tool_outputs → REJECTED (alucinación/hallucination)
 - Knowledge Concierge: "Descuento del 37%" aunque esté en rag_chunks → REJECTED (viola política/policy de máximo 20%, política tiene prioridad)
+- Scheduler: Pedir nombre, especialista preferido o fecha preferida al inicio de una reserva → APPROVED (recolección de datos iniciales no requiere tool_outputs siempre que no se afirme disponibilidad o confirmación)
+- "Cita agendada" o "Horario disponible" sin tool_outputs → REJECTED (esto sí requiere evidencia)
 
 Formato de Salida:
 Debes generar SOLO un objeto JSON que cumpla con el esquema GuardianVerdict."""
