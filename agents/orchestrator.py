@@ -5,7 +5,7 @@ Orchestrator Agent - Router que decide el siguiente paso en la conversación.
 from langchain_core.messages import HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
-from agents.base import AgentState, Intent, RouteQuery
+from agents.base import AgentState, Intent
 from config import GPT_MODELS, LLM_PROVIDER, GEMINI_MODELS  
 from langchain_google_genai import ChatGoogleGenerativeAI
 def router_node(state: AgentState) -> dict:
@@ -47,11 +47,6 @@ def router_node(state: AgentState) -> dict:
     intent_prompt_template = """Eres un experto clasificador de intenciones para una clínica dental.
 Analiza el último mensaje del usuario Teniendo en cuenta el HISTORIAL.
 
-IMPORTANTE - FORMATO DE COMUNICACIÓN:
-- Todas las respuestas deben ser CORTAS y CONCISAS, diseñadas para WhatsApp/Telegram
-- Máximo 2-3 líneas por mensaje (100-150 palabras máximo)
-- Lenguaje directo y claro, sin explicaciones extensas
-
 CLASIFICACIONES:
 - `consulta`: Info general, precios, servicios.
 - `reserva`: Quiere una cita O está dando datos para una (nombre, fecha, etc).
@@ -85,38 +80,19 @@ Responde con JSON."""
     # Actualizar estado
     state["intention"] = current_intention
 
-    # 3. Decision de Enrutamiento
-    #    Configuración del LLM para tomar la decisión de enrutamiento
-    structured_llm_router = llm.with_structured_output(RouteQuery)
-
-    router_prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                """Eres un 'Orchestrator' experto en un sistema de agentes de IA para un consultorio dental.
-Tu función es enrutar la conversación al agente correcto basándote en la intención del usuario.
-
-IMPORTANTE - FORMATO DE COMUNICACIÓN:
-- Todas las respuestas deben ser CORTAS y CONCISAS, diseñadas para WhatsApp/Telegram
-- Máximo 2-3 líneas por mensaje (100-150 palabras máximo)
-- Lenguaje directo y claro, sin explicaciones extensas
-Las opciones de agentes son:
-- Knowledge Concierge: Para consultas generales sobre precios, servicios, horarios, etc. (Intención: consulta)
-- Scheduler: Para agendar, reprogramar o cancelar una cita. (Intención: reserva, reprogramacion, cancelacion)
-- end: Si la intención es 'invalido', 'otro', 'queja' (si no hay agente de soporte aun), o no requiere acción.
-  - Para 'otro' (saludos), a veces el Scheduler puede responder si se quiere iniciar flujo, pero por seguridad 'end' o 'Knowledge Concierge' (para saludar) es mejor. 
-  - Para este caso: Si es 'otro', envia a 'Knowledge Concierge' para que responda el saludo amablemente o de info general.
-""",
-            ),
-            (
-                "human",
-                "La intención del usuario es: '{intention}'. ¿A qué agente debo enrutar la conversación?",
-            ),
-        ]
-    )
-
-    chain_router = router_prompt | structured_llm_router
-    route = chain_router.invoke({"intention": current_intention})
+    # 3. Enrutamiento DETERMINÍSTICO (sin LLM - mapeo directo para reducir latencia)
+    INTENT_TO_AGENT = {
+        "consulta": "Knowledge Concierge",
+        "reserva": "Scheduler",
+        "reprogramacion": "Scheduler",
+        "cancelacion": "Scheduler",
+        "objecion": "Knowledge Concierge",
+        "queja": "end",
+        "invalido": "end",
+        "otro": "Knowledge Concierge",
+    }
     
-    print(f"Decisión del Router: dirigir a -> {route.next_node}")
-    return {"next_node": route.next_node, "intention": current_intention}
+    next_node = INTENT_TO_AGENT.get(current_intention, "Knowledge Concierge")
+    
+    print(f"Decisión del Router: dirigir a -> {next_node}")
+    return {"next_node": next_node, "intention": current_intention}
