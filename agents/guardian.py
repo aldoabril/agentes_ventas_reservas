@@ -392,6 +392,12 @@ Evalúa esta acción usando las tres capas de validación y genera tu veredicto 
         """Build the system prompt for validation."""
         return """Eres el Agente Guardián (Judge & Compliance) de una clínica dental. Tu trabajo es proteger a la empresa y al cliente.
 
+IMPORTANTE - FORMATO DE COMUNICACIÓN:
+- Todas las respuestas deben ser CORTAS y CONCISAS, diseñadas para WhatsApp/Telegram
+- Máximo 2-3 líneas por mensaje (100-150 palabras máximo)
+- Lenguaje directo y claro, sin explicaciones extensas
+- Si necesitas proporcionar feedback, sé breve y específico
+
 INSTRUCCIONES DE VALIDACIÓN (3 CAPAS):
 
 1. CAPA DE SEGURIDAD (Safety Layer) - CRÍTICA:

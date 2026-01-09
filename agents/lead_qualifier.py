@@ -73,6 +73,11 @@ def lead_qualifier_node(state: AgentState):
     safety_prompt_template = """Eres un Guardrail de Seguridad AI.
 Tu ÚNICA función es validar si el mensaje del usuario es seguro y apropiado para un sistema de atención médica dental.
 
+IMPORTANTE - FORMATO DE COMUNICACIÓN:
+- Todas las respuestas deben ser CORTAS y CONCISAS, diseñadas para WhatsApp/Telegram
+- Máximo 2-3 líneas por mensaje (100-150 palabras máximo)
+- Lenguaje directo y claro, sin explicaciones extensas
+
 CRITERIOS DE RECHAZO (is_safe = False):
 - Toxicidad, insultos graves, odio.
 - Spam evidente, anuncios, phishing.

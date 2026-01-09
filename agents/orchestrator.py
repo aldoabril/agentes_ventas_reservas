@@ -47,6 +47,11 @@ def router_node(state: AgentState) -> dict:
     intent_prompt_template = """Eres un experto clasificador de intenciones para una clínica dental.
 Analiza el último mensaje del usuario Teniendo en cuenta el HISTORIAL.
 
+IMPORTANTE - FORMATO DE COMUNICACIÓN:
+- Todas las respuestas deben ser CORTAS y CONCISAS, diseñadas para WhatsApp/Telegram
+- Máximo 2-3 líneas por mensaje (100-150 palabras máximo)
+- Lenguaje directo y claro, sin explicaciones extensas
+
 CLASIFICACIONES:
 - `consulta`: Info general, precios, servicios.
 - `reserva`: Quiere una cita O está dando datos para una (nombre, fecha, etc).
@@ -90,6 +95,11 @@ Responde con JSON."""
                 "system",
                 """Eres un 'Orchestrator' experto en un sistema de agentes de IA para un consultorio dental.
 Tu función es enrutar la conversación al agente correcto basándote en la intención del usuario.
+
+IMPORTANTE - FORMATO DE COMUNICACIÓN:
+- Todas las respuestas deben ser CORTAS y CONCISAS, diseñadas para WhatsApp/Telegram
+- Máximo 2-3 líneas por mensaje (100-150 palabras máximo)
+- Lenguaje directo y claro, sin explicaciones extensas
 Las opciones de agentes son:
 - Knowledge Concierge: Para consultas generales sobre precios, servicios, horarios, etc. (Intención: consulta)
 - Scheduler: Para agendar, reprogramar o cancelar una cita. (Intención: reserva, reprogramacion, cancelacion)
